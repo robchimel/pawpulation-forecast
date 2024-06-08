@@ -38,22 +38,29 @@ def load_df(name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
 
 def feature_eng(df):
     # identify return animals, add new col for this
-    df['Multiple_Visits'] = df.groupby('Animal_ID')['Animal_ID'].transform('count')
+    df['Multiple_Visit_Count'] = df.groupby('Animal_ID')['Animal_ID'].transform('count')
 
     # calculate age at time of adoption
     df['Age_inDays_at_Outcome'] = (df['Outcome_Date'] - df['Date_Of_Birth']).dt.days
 
     # Create age groups
-    bins = [0, 1, 3, 7, 12, 100, 1000]  # Example bins for age groups
+    bins = [0, 1, 3, 10, 40, 1000]  # Example bins for age groups
     bins_days = [day*365 for day in bins]
-    labels = ['Puppy/Kitten', 'Young', 'Adult', 'Senior', 'Old', 'Unknown']
+    labels = ['Puppy/Kitten', 'Young', 'Adult', 'Senior', 'Unknown']
     df['Age_Group'] = pd.cut(df['Age_inDays_at_Outcome'], bins=bins_days, labels=labels)
     # df['Age_Group'].fillna('Unknown', inplace=True)
 
     # Example of feature interaction
     df['Is_Aggressive'] = df['Outcome_Subtype'].apply(lambda x: 1 if 'AGGRESSIVE' in str(x) else 0)
 
-    df['Length_of_Stay'] = (df['Outcome_Date'] - df['Intake_Date']).dt.days
+    # 1 if animal came to shelter with name, 0 f shelter named animal
+    df['Has_Name'] = df['Name'].apply(lambda x: 0 if '*' in str(x) else 1)
+
+    # 1 if animal is fixed, else 0
+    df['Is_Fixed'] = df.Sex.apply(lambda x: 1 if 'NEUTERED' in str(x) or 'SPAYED' in str(x) else 0)
+    # animal gender ignoring fix status
+    df['Sex'] = df.Sex.apply(lambda x: 'MALE' if 'NEUTERED' in str(x) else str(x))
+    df['Sex'] = df.Sex.apply(lambda x: 'FEMALE' if 'SPAYED' in str(x) else str(x))
 
     return df
 
