@@ -92,6 +92,12 @@ def feature_eng(df):
     df['Sex'] = df.Sex.apply(lambda x: 'MALE' if 'NEUTERED' in str(x) else str(x))
     df['Sex'] = df.Sex.apply(lambda x: 'FEMALE' if 'SPAYED' in str(x) else str(x))
 
+    # are multiple breeds listed?
+    df['Is_Mixed_Breed'] = df.Breed.apply(lambda x: 1 if '/' in str(x) or '&' in str(x) or 'MIX' in str(x) else 0)
+
+    # are multiple breeds listed?
+    df['Is_Multicolor'] = df.Color.apply(lambda x: 1 if '/' in str(x) else 0)
+
     return df
 
 def clean_df(df, params):
