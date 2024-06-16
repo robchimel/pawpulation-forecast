@@ -1,7 +1,14 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import numpy as np
-import re
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
 
 
 def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
@@ -33,6 +40,10 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
         * train_size: a fraction of data you want for the training data
         * validate_size: a fraction of data you want for the validate data
         * test_size: a fraction of data you want for the test data
+    
+    num_buckets how many buckets to break up length of stay into for model training
+        creates new column Days_in_Shelter_Label
+        * input is a integer
     '''
 
     dtype_dict = {
@@ -75,6 +86,10 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
         df = embed_colors(df, embeddings_index)
         df = embed_breeds(df, embeddings_index)
 
+
+    num_buckets = params['num_buckets']
+    class_labels = [i for i in range(num_buckets)]
+    df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
     train_df, validate_df, test_df = train_validate_test_split(df, params)
     return train_df, validate_df, test_df
 
@@ -231,17 +246,56 @@ def embed_colors(df, embeddings_index):
         color_embeddings['TORTIE'] = color_embeddings['Tortoiseshell'.upper()]
     # Apply the function to create embeddings for the 'Color' column
     df['Color_Embedding'] = df['Color'].apply(lambda x: get_mean_color_embedding(x, color_embeddings))
+    # Perform PCA to reduce dimensionality to 2D
+    pca = PCA(n_components=2)
+    reduced_embeddings = pca.fit_transform(np.array(df.Color_Embedding.tolist()))
+    # Apply KMeans clustering
+    n_clusters = 5  # Define the number of clusters
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    df['Color_Embedding_Cluster'] = kmeans.fit_predict(reduced_embeddings)
     return df
 
 def embed_breeds(df, embeddings_index):
     # Extract unique colors and get their embeddings
     unique_breeds = df['Breed'].str.replace('/',' ').str.replace('&',' ').str.split(' ').explode().unique()
     breed_embeddings = {breed: get_word_embedding(breed, embeddings_index) for breed in unique_breeds}
-    # if 'TORTIE' in color_embeddings.keys():
-    #     color_embeddings['TORTIE'] = color_embeddings['Tortoiseshell'.upper()]
-    # Apply the function to create embeddings for the 'Color' column
     df['Breed_Embedding'] = df['Breed'].apply(lambda x: get_mean_breed_embedding(x, breed_embeddings))
+    # Perform PCA to reduce dimensionality to 2D
+    pca = PCA(n_components=2)
+    reduced_embeddings = pca.fit_transform(np.array(df.Breed_Embedding.tolist()))
+    # Apply KMeans clustering
+    n_clusters = 5  # Define the number of clusters
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    df['Breed_Embedding_Cluster'] = kmeans.fit_predict(reduced_embeddings)
     return df
+
+def sklearn_pipeline(train_df,validate_df):
+    # Define feature columns and target column
+    feature_cols = ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
+       'Intake_Condition', 'Multiple_Visit_Count',
+       'Age_inDays_at_Outcome', 'Age_Group', 'Is_Aggressive', 'Has_Name',
+       'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor', 'Color_Embedding_Cluster',
+       'Breed_Embedding_Cluster']
+    target_col = 'Days_in_Shelter_Label'
+
+    # Split data into training and testing sets
+    X_train = train_df[feature_cols]
+    y_train = train_df[target_col]
+    X_test = validate_df[feature_cols]
+    y_test = validate_df[target_col]
+
+    # Define the column transformer with OneHotEncoder for categorical columns and StandardScaler for numerical columns
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', StandardScaler(), ['Age_inDays_at_Outcome', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
+                'Breed_Embedding_Cluster']),
+            ('cat', OneHotEncoder(), ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
+                'Intake_Condition','Age_Group', 'Is_Aggressive', 'Has_Name',
+                'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor'])
+        ])
+
+    return preprocessor, X_train, y_train, X_test, y_test
+
 
 if __name__ == '__main__':
     '''
@@ -268,12 +322,18 @@ if __name__ == '__main__':
         * train_size: a fraction of data you want for the training data
         * validate_size: a fraction of data you want for the validate data
         * test_size: a fraction of data you want for the test data
+
+    num_buckets how many buckets to break up length of stay into for model training
+        creates new column Days_in_Shelter_Label
+        * input is a integer
+    
     '''
 
     params = {
             'na_data': 'fill',
             'drop_outlier_days': 300,
             'embed':True,
+            'num_buckets':3,
             'sample_dict':
                 {
                 'stratify_col':'Type',
