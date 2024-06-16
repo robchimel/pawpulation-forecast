@@ -1,5 +1,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import numpy as np
+import re
 
 
 def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
@@ -20,6 +22,11 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
     input options are...
         * False
         * or any integer
+    
+    embed creates 50x1 embedding vectors for color and breed.
+        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
+        * True
+        * False
     
     sample_dict controls stratified sampling
         * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
@@ -60,6 +67,13 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
     df['Outcome Date'] = pd.to_datetime(df['Outcome Date'], errors='coerce')
     df = clean_df(df, params)
     df = feature_eng(df)
+
+    if params['embed']:
+        # download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
+        glove_file_path = 'glove.6B/glove.6B.50d.txt'
+        embeddings_index = load_glove_embeddings(glove_file_path)
+        df = embed_colors(df, embeddings_index)
+        df = embed_breeds(df, embeddings_index)
 
     train_df, validate_df, test_df = train_validate_test_split(df, params)
     return train_df, validate_df, test_df
@@ -138,7 +152,9 @@ def clean_df(df, params):
     # Drop rows where 'Animal ID' is missing as it is a critical identifier
     df.dropna(subset=['Animal_ID'], inplace=True)
     df.drop(columns=['Count'], inplace=True)
-
+    # update TORTIE to Tortoiseshell
+    df.loc[df.Color=='TORTIE', 'Color'] = 'Tortoiseshell'.upper()
+    
     # place nan token for remaining columns
     for col in df.columns:
         null_count = df[col][df[col].isnull()].shape[0]
@@ -178,6 +194,54 @@ def train_validate_test_split(df, params):
 
     return train, validate, test
 
+def load_glove_embeddings(file_path='glove.6B/glove.6B.50d.txt'):
+    embeddings_index = {}
+    with open(file_path, encoding="utf-8") as f:
+        for line in f:
+            values = line.split()
+            word = values[0]
+            coefs = np.asarray(values[1:], dtype='float32')
+            embeddings_index[word] = coefs
+    return embeddings_index
+
+def get_word_embedding(word, embeddings_index):
+    word = word.lower()
+    return embeddings_index.get(word, np.zeros(50))  # 50 is the dimension of the GloVe vectors
+
+def get_mean_color_embedding(color, color_embeddings):
+    color = color.replace('/',' ')
+    colors = color.split(' ')
+    embeddings = [color_embeddings[c] for c in colors if c in color_embeddings]
+    return np.mean(embeddings, axis=0)
+
+def get_mean_breed_embedding(breed, breed_embeddings):
+    breed = breed.replace('/',' ')
+    breed = breed.replace('&',' ')
+    breed = breed.replace('   ',' ')
+    breed = breed.replace('  ',' ')
+    breeds = breed.split(' ')
+    embeddings = [breed_embeddings[c] for c in breeds if c in breed_embeddings]
+    return np.mean(embeddings, axis=0)
+
+def embed_colors(df, embeddings_index):
+    # Extract unique colors and get their embeddings
+    unique_colors = df['Color'].str.replace('/', ' ').str.split(' ').explode().unique()
+    color_embeddings = {color: get_word_embedding(color, embeddings_index) for color in unique_colors}
+    if 'TORTIE' in color_embeddings.keys():
+        color_embeddings['TORTIE'] = color_embeddings['Tortoiseshell'.upper()]
+    # Apply the function to create embeddings for the 'Color' column
+    df['Color_Embedding'] = df['Color'].apply(lambda x: get_mean_color_embedding(x, color_embeddings))
+    return df
+
+def embed_breeds(df, embeddings_index):
+    # Extract unique colors and get their embeddings
+    unique_breeds = df['Breed'].str.replace('/',' ').str.replace('&',' ').str.split(' ').explode().unique()
+    breed_embeddings = {breed: get_word_embedding(breed, embeddings_index) for breed in unique_breeds}
+    # if 'TORTIE' in color_embeddings.keys():
+    #     color_embeddings['TORTIE'] = color_embeddings['Tortoiseshell'.upper()]
+    # Apply the function to create embeddings for the 'Color' column
+    df['Breed_Embedding'] = df['Breed'].apply(lambda x: get_mean_breed_embedding(x, breed_embeddings))
+    return df
 
 if __name__ == '__main__':
     '''
@@ -194,6 +258,11 @@ if __name__ == '__main__':
         * False
         * or any integer
     
+    embed creates 50x1 embedding vectors for color and breed
+        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
+        * True
+        * False
+    
     sample_dict controls stratified sampling
         * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
         * train_size: a fraction of data you want for the training data
@@ -204,6 +273,7 @@ if __name__ == '__main__':
     params = {
             'na_data': 'fill',
             'drop_outlier_days': 300,
+            'embed':True,
             'sample_dict':
                 {
                 'stratify_col':'Type',
