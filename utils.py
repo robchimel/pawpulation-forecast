@@ -100,13 +100,13 @@ def feature_eng(df):
     df['Multiple_Visit_Count'] = df.groupby('Animal_ID')['Animal_ID'].transform('count')
 
     # calculate age at time of adoption
-    df['Age_inDays_at_Outcome'] = (df['Outcome_Date'] - df['Date_Of_Birth']).dt.days
+    df['Age_inDays_at_Income'] = (df['Intake_Date'] - df['Date_Of_Birth']).dt.days
 
     # Create age groups
     bins = [0, 1, 3, 10, 40, 1000]  # Example bins for age groups
     bins_days = [day*365 for day in bins]
     labels = ['Puppy/Kitten', 'Young', 'Adult', 'Senior', 'Unknown']
-    df['Age_Group'] = pd.cut(df['Age_inDays_at_Outcome'], bins=bins_days, labels=labels)
+    df['Age_Group'] = pd.cut(df['Age_inDays_at_Income'], bins=bins_days, labels=labels)
     # df['Age_Group'].fillna('Unknown', inplace=True)
 
     # Example of feature interaction
@@ -273,7 +273,7 @@ def sklearn_pipeline(train_df,validate_df):
     # Define feature columns and target column
     feature_cols = ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
        'Intake_Condition', 'Multiple_Visit_Count',
-       'Age_inDays_at_Outcome', 'Age_Group', 'Is_Aggressive', 'Has_Name',
+       'Age_inDays_at_Income', 'Age_Group', 'Is_Aggressive', 'Has_Name',
        'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor', 'Color_Embedding_Cluster',
        'Breed_Embedding_Cluster']
     target_col = 'Days_in_Shelter_Label'
@@ -287,7 +287,7 @@ def sklearn_pipeline(train_df,validate_df):
     # Define the column transformer with OneHotEncoder for categorical columns and StandardScaler for numerical columns
     preprocessor = ColumnTransformer(
         transformers=[
-            ('num', StandardScaler(), ['Age_inDays_at_Outcome', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
+            ('num', StandardScaler(), ['Age_inDays_at_Income', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
                 'Breed_Embedding_Cluster']),
             ('cat', OneHotEncoder(), ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
                 'Intake_Condition','Age_Group', 'Is_Aggressive', 'Has_Name',
