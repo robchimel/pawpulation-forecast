@@ -161,6 +161,7 @@ cython_debug/
 
 
 glove.6B
+# DAS_Data.csv
 Austin_Animal_Center_Intakes_20240609.csv
 Austin_Animal_Center_Outcomes_20240609.csv
 
