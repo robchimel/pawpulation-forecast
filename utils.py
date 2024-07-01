@@ -28,7 +28,7 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
         * False
         * or any integer
     
-    embed creates 50x1 embedding vectors for color and breed.
+    embed creates 50x1 embedding vectors for color and Subtype.
         download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
         * True
         * False
@@ -129,12 +129,12 @@ def get_mean_color_embedding(color, color_embeddings):
     embeddings = [color_embeddings[c] for c in colors if c in color_embeddings]
     return np.mean(embeddings, axis=0)
 
-def get_mean_breed_embedding(breed, breed_embeddings):
-    breed = breed.replace('/',' ')
-    breed = breed.replace('&',' ')
-    breed = breed.replace('   ',' ')
-    breed = breed.replace('  ',' ')
-    breeds = breed.split(' ')
+def get_mean_breed_embedding(Subtype, breed_embeddings):
+    Subtype = Subtype.replace('/',' ')
+    Subtype = Subtype.replace('&',' ')
+    Subtype = Subtype.replace('   ',' ')
+    Subtype = Subtype.replace('  ',' ')
+    breeds = Subtype.split(' ')
     embeddings = [breed_embeddings[c] for c in breeds if c in breed_embeddings]
     return np.mean(embeddings, axis=0)
 
@@ -166,9 +166,9 @@ def embed_colors(df, embeddings_index):
 
 def embed_breeds(df, embeddings_index):
     # Extract unique colors and get their embeddings
-    unique_breeds = df['Breed'].str.replace('/',' ').str.replace('&',' ').str.split(' ').explode().unique()
-    breed_embeddings = {breed: get_word_embedding(breed, embeddings_index) for breed in unique_breeds}
-    df['Breed_Embedding'] = df['Breed'].apply(lambda x: get_mean_breed_embedding(x, breed_embeddings))
+    unique_breeds = df['Subtype'].str.replace('/',' ').str.replace('&',' ').str.split(' ').explode().unique()
+    breed_embeddings = {Subtype: get_word_embedding(Subtype, embeddings_index) for Subtype in unique_breeds}
+    df['Breed_Embedding'] = df['Subtype'].apply(lambda x: get_mean_breed_embedding(x, breed_embeddings))
     # Perform PCA to reduce dimensionality to 2D
     pca = PCA(n_components=2)
     reduced_embeddings = pca.fit_transform(np.array(df.Breed_Embedding.tolist()))
@@ -189,7 +189,7 @@ def embed_subtype(df, embeddings_index):
     # Apply KMeans clustering
     n_clusters = 5  # Define the number of clusters
     kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-    df['Breed_Embedding_Cluster'] = kmeans.fit_predict(reduced_embeddings)
+    df['Subtype_Embedding_Cluster'] = kmeans.fit_predict(reduced_embeddings)
     return df
 
 def sklearn_pipeline(train_df,validate_df):
@@ -235,7 +235,7 @@ if __name__ == '__main__':
         * False
         * or any integer
     
-    embed creates 50x1 embedding vectors for color and breed
+    embed creates 50x1 embedding vectors for color and Subtype
         download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
         * True
         * False
