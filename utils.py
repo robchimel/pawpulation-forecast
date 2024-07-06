@@ -11,37 +11,34 @@ from load_Sonoma import *
 
 def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
     '''
-    this loads the csv, cleans the data and creates new columns
+        params options
 
-    name is the name of the csv, this should be a direct or relative path to the csv database for Animal_Shelter_Intake_and_Outcome
+        na_data will fill missing data with 'unknown', delete missing data or do nothing
+        input options are...
+            * 'fill'
+            * 'drop'
+            * False
 
-    params options
+        drop_outlier_days removes pets who have a lenght of stay exceeding the value YOU enter
+        input options are...
+            * False
+            * or any integer
 
-    na_data will fill missing data with 'unknown', delete missing data or do nothing
-    input options are...
-        * 'fill'
-        * 'drop'
-        * False
+        embed creates 50x1 embedding vectors for color and Subtype
+            download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
+            * True
+            * False
 
-    drop_outlier_days removes pets who have a lenght of stay exceeding the value YOU enter
-    input options are...
-        * False
-        * or any integer
-    
-    embed creates 50x1 embedding vectors for color and Subtype.
-        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
-        * True
-        * False
-    
-    sample_dict controls stratified sampling
-        * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
-        * train_size: a fraction of data you want for the training data
-        * validate_size: a fraction of data you want for the validate data
-        * test_size: a fraction of data you want for the test data
-    
-    num_buckets how many buckets to break up length of stay into for model training
-        creates new column Days_in_Shelter_Label
-        * input is a integer
+        sample_dict controls stratified sampling
+            * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
+            * train_size: a fraction of data you want for the training data
+            * validate_size: a fraction of data you want for the validate data
+            * test_size: a fraction of data you want for the test data
+
+        buckets what buckets will we split the data to?
+            creates new column Days_in_Shelter_Label
+            * input is a list of integers
+            * please use [-1,3,14,30,100,99999999] as agreed upon based on shelter feedback
     '''
 
     Sonoma_df = load_Sonoma(params)
@@ -59,7 +56,7 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
                     df[col].fillna('Unknown', inplace=True)
                 else:
                     print(f"replace null values in {col} with 'np.nan'")
-                    df[col].fillna(np.nan, inplace=True)
+                    df[col].fillna(int(-1), inplace=True)
 
             elif params['na_data'].lower() == 'drop':
                 print(f"drop null values in {col}")
@@ -221,38 +218,6 @@ def sklearn_pipeline(train_df,validate_df):
 
 
 if __name__ == '__main__':
-    '''
-    params options
-
-    na_data will fill missing data with 'unknown', delete missing data or do nothing
-    input options are...
-        * 'fill'
-        * 'drop'
-        * False
-
-    drop_outlier_days removes pets who have a lenght of stay exceeding the value YOU enter
-    input options are...
-        * False
-        * or any integer
-    
-    embed creates 50x1 embedding vectors for color and Subtype
-        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
-        * True
-        * False
-    
-    sample_dict controls stratified sampling
-        * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
-        * train_size: a fraction of data you want for the training data
-        * validate_size: a fraction of data you want for the validate data
-        * test_size: a fraction of data you want for the test data
-
-    buckets what buckets will we split the data to?
-        creates new column Days_in_Shelter_Label
-        * input is a list of integers
-        * please use [-1,3,14,30,100,99999999] as agreed upon based on shelter feedback
-    
-    '''
-
     params = {
             'na_data': 'fill',
             'drop_outlier_days': 300,
