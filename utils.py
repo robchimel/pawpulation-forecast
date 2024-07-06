@@ -73,9 +73,9 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
         df = embed_breeds(df, embeddings_index)
         df = embed_subtype(df, embeddings_index)
 
-    num_buckets = params['num_buckets']
-    class_labels = [i for i in range(num_buckets)]
-    df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
+    class_labels = [i for i in range(len(params['buckets'])-1)]
+    df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)
+    # df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
     train_df, validate_df, test_df = train_validate_test_split(df, params)
     
     return train_df, validate_df, test_df
@@ -166,9 +166,9 @@ def embed_colors(df, embeddings_index):
 
 def embed_breeds(df, embeddings_index):
     # Extract unique colors and get their embeddings
-    unique_breeds = df['Subtype'].str.replace('/',' ').str.replace('&',' ').str.split(' ').explode().unique()
-    breed_embeddings = {Subtype: get_word_embedding(Subtype, embeddings_index) for Subtype in unique_breeds}
-    df['Breed_Embedding'] = df['Subtype'].apply(lambda x: get_mean_breed_embedding(x, breed_embeddings))
+    unique_breeds = df['Breed'].str.replace('/',' ').str.replace('&',' ').str.split(' ').explode().unique()
+    breed_embeddings = {breed: get_word_embedding(breed, embeddings_index) for breed in unique_breeds}
+    df['Breed_Embedding'] = df['Breed'].apply(lambda x: get_mean_breed_embedding(x, breed_embeddings))
     # Perform PCA to reduce dimensionality to 2D
     pca = PCA(n_components=2)
     reduced_embeddings = pca.fit_transform(np.array(df.Breed_Embedding.tolist()))
@@ -246,9 +246,10 @@ if __name__ == '__main__':
         * validate_size: a fraction of data you want for the validate data
         * test_size: a fraction of data you want for the test data
 
-    num_buckets how many buckets to break up length of stay into for model training
+    buckets what buckets will we split the data to?
         creates new column Days_in_Shelter_Label
-        * input is a integer
+        * input is a list of integers
+        * please use [-1,3,14,30,100,99999999] as agreed upon based on shelter feedback
     
     '''
 
@@ -256,7 +257,7 @@ if __name__ == '__main__':
             'na_data': 'fill',
             'drop_outlier_days': 300,
             'embed':True,
-            'num_buckets':4,
+            'buckets':[-1,3,14,30,100,99999999],
             'sample_dict':
                 {
                 'stratify_col':'Type',
