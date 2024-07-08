@@ -3,37 +3,7 @@ import numpy as np
 
 def load_denver(params, name = 'DAS_Data.csv'):
     '''
-    this loads the csv, cleans the data and creates new columns
-
-    name is the name of the csv, this should be a direct or relative path to the csv database for Animal_Shelter_Intake_and_Outcome
-
-    params options
-
-    na_data will fill missing data with 'unknown', delete missing data or do nothing
-    input options are...
-        * 'fill'
-        * 'drop'
-        * False
-
-    drop_outlier_days removes pets who have a lenght of stay exceeding the value YOU enter
-    input options are...
-        * False
-        * or any integer
-    
-    embed creates 50x1 embedding vectors for color and breed.
-        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
-        * True
-        * False
-    
-    sample_dict controls stratified sampling
-        * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
-        * train_size: a fraction of data you want for the training data
-        * validate_size: a fraction of data you want for the validate data
-        * test_size: a fraction of data you want for the test data
-    
-    num_buckets how many buckets to break up length of stay into for model training
-        creates new column Days_in_Shelter_Label
-        * input is a integer
+    prepare denver data to be merged with other datasets. clean and do feature engineering
     '''
 
     dtype_dict = {
@@ -180,8 +150,8 @@ def clean_df(df, params):
                     print(f"replace null values in {col} with 'Unknown'")
                     df[col].fillna('Unknown', inplace=True)
                 else:
-                    print(f"replace null values in {col} with 'np.nan'")
-                    df[col].fillna(np.nan, inplace=True)
+                    print(f"replace null values in {col} with '-1'")
+                    df[col].fillna(int(-1), inplace=True)
 
             elif params['na_data'].lower() == 'drop':
                 print(f"drop null values in {col}")
@@ -195,37 +165,6 @@ def clean_df(df, params):
 
 
 if __name__ == '__main__':
-    '''
-    params options
-
-    na_data will fill missing data with 'unknown', delete missing data or do nothing
-    input options are...
-        * 'fill'
-        * 'drop'
-        * False
-
-    drop_outlier_days removes pets who have a lenght of stay exceeding the value YOU enter
-    input options are...
-        * False
-        * or any integer
-    
-    embed creates 50x1 embedding vectors for color and breed
-        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
-        * True
-        * False
-    
-    sample_dict controls stratified sampling
-        * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
-        * train_size: a fraction of data you want for the training data
-        * validate_size: a fraction of data you want for the validate data
-        * test_size: a fraction of data you want for the test data
-
-    num_buckets how many buckets to break up length of stay into for model training
-        creates new column Days_in_Shelter_Label
-        * input is a integer
-    
-    '''
-
 
     params = {
             'na_data': 'fill',

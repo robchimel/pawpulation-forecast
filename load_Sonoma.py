@@ -3,37 +3,7 @@ import numpy as np
 
 def load_Sonoma(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
     '''
-    this loads the csv, cleans the data and creates new columns
-
-    name is the name of the csv, this should be a direct or relative path to the csv database for Animal_Shelter_Intake_and_Outcome
-
-    params options
-
-    na_data will fill missing data with 'unknown', delete missing data or do nothing
-    input options are...
-        * 'fill'
-        * 'drop'
-        * False
-
-    drop_outlier_days removes pets who have a lenght of stay exceeding the value YOU enter
-    input options are...
-        * False
-        * or any integer
-    
-    embed creates 50x1 embedding vectors for color and breed.
-        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
-        * True
-        * False
-    
-    sample_dict controls stratified sampling
-        * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
-        * train_size: a fraction of data you want for the training data
-        * validate_size: a fraction of data you want for the validate data
-        * test_size: a fraction of data you want for the test data
-    
-    num_buckets how many buckets to break up length of stay into for model training
-        creates new column Days_in_Shelter_Label
-        * input is a integer
+    prepare sonoma data to be merged with other datasets. clean and do feature engineering
     '''
 
     dtype_dict = {
@@ -88,10 +58,10 @@ def feature_eng(df):
     # df['Age_Group'].fillna('Unknown', inplace=True)
 
     # Example of feature interaction
-    df['Is_Aggressive'] = df['Outcome_Subtype'].apply(lambda x: 1 if 'AGGRESSIVE' in str(x) else 0)
+    # df['Is_Aggressive'] = df['Outcome_Subtype'].apply(lambda x: 1 if 'AGGRESSIVE' in str(x) else 0)
 
     # 1 if animal came to shelter with name, 0 f shelter named animal
-    df['Has_Name'] = df['Name'].apply(lambda x: 0 if '*' in str(x) else 1)
+    df['Has_Name'] = df['Name'].apply(lambda x: 0 if ('*' in str(x) or 'Unknown' == str(x)) else 1)
 
     # 1 if animal is fixed, else 0
     df['Is_Fixed'] = df.Sex.apply(lambda x: 1 if 'NEUTERED' in str(x) or 'SPAYED' in str(x) else 0)
@@ -157,8 +127,8 @@ def clean_df(df, params):
                     print(f"replace null values in {col} with 'Unknown'")
                     df[col].fillna('Unknown', inplace=True)
                 else:
-                    print(f"replace null values in {col} with 'np.nan'")
-                    df[col].fillna(np.nan, inplace=True)
+                    print(f"replace null values in {col} with '-1'")
+                    df[col].fillna(int(-1), inplace=True)
 
             elif params['na_data'].lower() == 'drop':
                 print(f"drop null values in {col}")
@@ -170,36 +140,6 @@ def clean_df(df, params):
     return df
 
 if __name__ == '__main__':
-    '''
-    params options
-
-    na_data will fill missing data with 'unknown', delete missing data or do nothing
-    input options are...
-        * 'fill'
-        * 'drop'
-        * False
-
-    drop_outlier_days removes pets who have a lenght of stay exceeding the value YOU enter
-    input options are...
-        * False
-        * or any integer
-    
-    embed creates 50x1 embedding vectors for color and breed
-        download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
-        * True
-        * False
-    
-    sample_dict controls stratified sampling
-        * stratify_col: a column name used for stratified sampling... spelling and caps must be exact
-        * train_size: a fraction of data you want for the training data
-        * validate_size: a fraction of data you want for the validate data
-        * test_size: a fraction of data you want for the test data
-
-    num_buckets how many buckets to break up length of stay into for model training
-        creates new column Days_in_Shelter_Label
-        * input is a integer
-    
-    '''
 
     params = {
             'na_data': 'fill',

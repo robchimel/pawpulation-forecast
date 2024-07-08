@@ -7,6 +7,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from load_Denver import *
 from load_Sonoma import *
+from load_Austin import *
 
 
 def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
@@ -45,7 +46,11 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
     Sonoma_df['dataset'] = 'Sonoma'
     denver_df = load_denver(params)
     denver_df['dataset'] = 'Denver'
-    df = pd.concat([Sonoma_df,denver_df], ignore_index=True)
+    austin_df = load_Austin(params)
+    austin_df['dataset'] = 'Austin'
+    
+    df = pd.concat([Sonoma_df,denver_df,austin_df], ignore_index=True)
+    df = df[df.Intake_Subtype!='S-EVICT']
     # place nan token for remaining columns
     for col in df.columns:
         null_count = df[col][df[col].isnull()].shape[0]
