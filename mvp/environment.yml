@@ -1,0 +1,12 @@
+name: capstone
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - numpy=1.26.4=py312h7f4fdc5_0
+  - pandas=2.2.1=py312hd77ebd4_0
+  - pip=24.0=pyhd8ed1ab_0
+  - python=3.12.3=h99e199e_1
+  - sodapy=2.2.0=pyhd8ed1ab_0
+  - pip:
+      - streamlit==1.36.0
