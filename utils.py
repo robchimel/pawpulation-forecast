@@ -5,12 +5,14 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
+from multiprocessing import Pool
+import functools
 from load_Denver import *
 from load_Sonoma import *
 from load_Austin import *
 
 
-def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
+def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv', no_outcome_cols=True):
     '''
         params options
 
@@ -42,14 +44,14 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
             * please use [-1,3,14,30,100,99999999] as agreed upon based on shelter feedback
     '''
 
-    Sonoma_df = load_Sonoma(params)
-    Sonoma_df['dataset'] = 'Sonoma'
-    denver_df = load_denver(params)
-    denver_df['dataset'] = 'Denver'
-    austin_df = load_Austin(params)
-    austin_df['dataset'] = 'Austin'
-    
-    df = pd.concat([Sonoma_df,denver_df,austin_df], ignore_index=True)
+    df = load_all_data(params) # use multiprocess to speed up data load
+    df['Intake_Year'] = df['Intake_Date'].dt.year
+    df['Intake_Month'] = df['Intake_Date'].dt.month
+    df['Intake_Day'] = df['Intake_Date'].dt.day
+    df['Date_Of_Birth'] = pd.to_datetime(df['Date_Of_Birth'], errors='coerce')
+    df['Birth_Year'] = df['Date_Of_Birth'].dt.year
+    df['Birth_Month'] = df['Date_Of_Birth'].dt.month
+    df['Birth_Day'] = df['Date_Of_Birth'].dt.day
     df = df[df.Intake_Subtype!='S-EVICT']
     # place nan token for remaining columns
     for col in df.columns:
@@ -78,9 +80,39 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
     class_labels = [i for i in range(len(params['buckets'])-1)]
     df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)
     # df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
+    if no_outcome_cols==True:
+        df = df[['Name', 'Type', 'Breed', 'Color', 'Sex', 'Size', 'Date_Of_Birth',
+        'Impound_Number', 'Kennel_Number', 'Animal_ID', 'Intake_Date',
+        'Days_in_Shelter', 'Intake_Type', 'Intake_Subtype',
+        'Intake_Condition', 'Intake_Jurisdiction',
+        'Location', 'Multiple_Visit_Count',
+        'Age_inDays_at_Income', 'Age_Group', 'Has_Name', 'Is_Fixed',
+        'Is_Mixed_Breed', 'Is_Multicolor', 'dataset', 'Is_Aggressive',
+        'Color_Embedding', 'Color_Embedding_Cluster', 'Breed_Embedding',
+        'Breed_Embedding_Cluster', 'Intake_Subtype_Embedding',
+        'Subtype_Embedding_Cluster', 'Days_in_Shelter_Label','Intake_Year',
+        'Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day']]
     train_df, validate_df, test_df = train_validate_test_split(df, params)
     
     return train_df, validate_df, test_df
+
+def smap(f):
+    return f()
+    
+def load_all_data(params):
+    func1 = functools.partial(load_Sonoma, params)
+    func2 = functools.partial(load_denver, params)
+    func3 = functools.partial(load_Austin, params)
+    pool = Pool(processes=3)
+    results = pool.map(smap, [func1, func2, func3])
+    pool.close()
+    pool.join()
+    results[0]['dataset'] = 'Sonoma'
+    results[1]['dataset'] = 'Denver'
+    results[2]['dataset'] = 'Austin'
+
+    df = pd.concat([results[0],results[1],results[2]], ignore_index=True)
+    return df
 
 def train_validate_test_split(df, params):
     '''split data into train, validate, test'''
@@ -200,7 +232,8 @@ def sklearn_pipeline(train_df,validate_df):
        'Intake_Condition', 'Multiple_Visit_Count',
        'Age_inDays_at_Income', 'Age_Group', 'Is_Aggressive', 'Has_Name',
        'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor', 'Color_Embedding_Cluster',
-       'Breed_Embedding_Cluster']
+       'Breed_Embedding_Cluster', 'Subtype_Embedding_Cluster',
+       'Intake_Year','Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day']
     target_col = 'Days_in_Shelter_Label'
 
     # Split data into training and testing sets
@@ -213,7 +246,8 @@ def sklearn_pipeline(train_df,validate_df):
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), ['Age_inDays_at_Income', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
-                'Breed_Embedding_Cluster']),
+                'Breed_Embedding_Cluster', 'Subtype_Embedding_Cluster','Intake_Year','Intake_Month',
+                'Intake_Day','Birth_Year','Birth_Year','Birth_Day']),
             ('cat', OneHotEncoder(), ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
                 'Intake_Condition','Age_Group', 'Is_Aggressive', 'Has_Name',
                 'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor'])
