@@ -1,7 +1,6 @@
 import pandas as pd
-import numpy as np
 
-def load_denver(params, name = 'DAS_Data.csv'):
+def load_denver(params, data = 'DAS_Data.csv'):
     '''
     prepare denver data to be merged with other datasets. clean and do feature engineering
     '''
@@ -24,7 +23,11 @@ def load_denver(params, name = 'DAS_Data.csv'):
         'outcome_cond': 'str', 
         'crossing': 'str'
     }
-    df =  pd.read_csv(name, dtype=dtype_dict)
+
+    if isinstance(data, pd.DataFrame):
+        df = data
+    else:
+        df =  pd.read_csv(data, dtype=dtype_dict)
 
     rename_dict = {'animal_name':'Name', 'animal_type':'Type', 'primary_breed':'Breed', 'primary_color':'Color', 'sex':'Sex',
         'animal_size':'Size', 'dob':'Date Of Birth', 'intake_date':'Intake Date', 'outcome_date':'Outcome Date', 

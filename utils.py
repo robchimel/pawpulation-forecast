@@ -10,9 +10,13 @@ import functools
 from load_Denver import *
 from load_Sonoma import *
 from load_Austin import *
+import os
+import sys
+sys.path.insert(1, os.getcwd())
+sys.path.insert(2, os.path.dirname(os.getcwd()))
 
 
-def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv', no_outcome_cols=True):
+def load_df(params, data = False, no_outcome_cols=True, split_data=True):
     '''
         params options
 
@@ -43,8 +47,15 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv', no_
             * input is a list of integers
             * please use [-1,3,14,30,100,99999999] as agreed upon based on shelter feedback
     '''
+    if isinstance(data, pd.DataFrame):
+        df = load_Sonoma(params, data)
+        df['dataset'] = 'API'
+        df['Days_in_Shelter'] = df['Days_in_Shelter'].astype('int64')
+        # API_data = True
+    else:
+        df = load_all_data(params) # use multiprocess to speed up data load
+        # API_data = False
 
-    df = load_all_data(params) # use multiprocess to speed up data load
     df['Intake_Year'] = df['Intake_Date'].dt.year
     df['Intake_Month'] = df['Intake_Date'].dt.month
     df['Intake_Day'] = df['Intake_Date'].dt.day
@@ -71,7 +82,12 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv', no_
 
     if params['embed']:
         # download https://nlp.stanford.edu/data/glove.6B.zip, unzip and save in repo
-        glove_file_path = 'glove.6B/glove.6B.50d.txt'
+        if os.path.isfile('glove.6B/glove.6B.50d.txt'):
+            glove_file_path = 'glove.6B/glove.6B.50d.txt'
+        else:
+            repo_dir = os.path.dirname(os.getcwd())
+            glove_file_path = os.path.join(repo_dir, 'glove.6B', 'glove.6B.50d.txt')
+
         embeddings_index = load_glove_embeddings(glove_file_path)
         df = embed_colors(df, embeddings_index)
         df = embed_breeds(df, embeddings_index)
@@ -81,20 +97,27 @@ def load_df(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv', no_
     df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)
     # df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
     if no_outcome_cols==True:
-        df = df[['Name', 'Type', 'Breed', 'Color', 'Sex', 'Size', 'Date_Of_Birth',
-        'Impound_Number', 'Kennel_Number', 'Animal_ID', 'Intake_Date',
-        'Days_in_Shelter', 'Intake_Type', 'Intake_Subtype',
-        'Intake_Condition', 'Intake_Jurisdiction',
-        'Location', 'Multiple_Visit_Count',
-        'Age_inDays_at_Income', 'Age_Group', 'Has_Name', 'Is_Fixed',
-        'Is_Mixed_Breed', 'Is_Multicolor', 'dataset', 'Is_Aggressive',
-        'Color_Embedding', 'Color_Embedding_Cluster', 'Breed_Embedding',
-        'Breed_Embedding_Cluster', 'Intake_Subtype_Embedding',
-        'Subtype_Embedding_Cluster', 'Days_in_Shelter_Label','Intake_Year',
-        'Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day']]
-    train_df, validate_df, test_df = train_validate_test_split(df, params)
+        final_cols = ['Name', 'Type', 'Breed', 'Color', 'Sex', 'Size', 'Date_Of_Birth',
+            'Impound_Number', 'Kennel_Number', 'Animal_ID', 'Intake_Date',
+            'Days_in_Shelter', 'Intake_Type', 'Intake_Subtype',
+            'Intake_Condition', 'Intake_Jurisdiction',
+            'Location', 'Multiple_Visit_Count',
+            'Age_inDays_at_Income', 'Age_Group', 'Has_Name', 'Is_Fixed',
+            'Is_Mixed_Breed', 'Is_Multicolor', 'dataset', 'Is_Aggressive',
+            'Color_Embedding', 'Color_Embedding_Cluster', 'Breed_Embedding',
+            'Breed_Embedding_Cluster', 'Intake_Subtype_Embedding',
+            'Subtype_Embedding_Cluster', 'Days_in_Shelter_Label','Intake_Year',
+            'Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day'
+            ]
+        final_cols = [col for col in final_cols if col in df.columns]
+
+        df = df[final_cols]
     
-    return train_df, validate_df, test_df
+    if split_data:
+        train_df, validate_df, test_df = train_validate_test_split(df, params)
+        return train_df, validate_df, test_df
+    else:
+        return df
 
 def smap(f):
     return f()
@@ -185,8 +208,11 @@ def embed_colors(df, embeddings_index):
     # Extract unique colors and get their embeddings
     unique_colors = df['Color'].str.replace('/', ' ').str.split(' ').explode().unique()
     color_embeddings = {color: get_word_embedding(color, embeddings_index) for color in unique_colors}
-    if 'TORTIE' in color_embeddings.keys():
-        color_embeddings['TORTIE'] = color_embeddings['Tortoiseshell'.upper()]
+    try:
+        if 'TORTIE' in color_embeddings.keys():
+            color_embeddings['TORTIE'] = color_embeddings['Tortoiseshell'.upper()]
+    except:
+        print('failed to rename TORTIE color_embedding')
     # Apply the function to create embeddings for the 'Color' column
     df['Color_Embedding'] = df['Color'].apply(lambda x: get_mean_color_embedding(x, color_embeddings))
     # Perform PCA to reduce dimensionality to 2D
@@ -234,6 +260,15 @@ def sklearn_pipeline(train_df,validate_df):
        'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor', 'Color_Embedding_Cluster',
        'Breed_Embedding_Cluster', 'Subtype_Embedding_Cluster',
        'Intake_Year','Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day']
+    num_cols = ['Age_inDays_at_Income', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
+                'Breed_Embedding_Cluster', 'Subtype_Embedding_Cluster','Intake_Year','Intake_Month',
+                'Intake_Day','Birth_Year','Birth_Year','Birth_Day']
+    cat_cols = ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
+                'Intake_Condition','Age_Group', 'Is_Aggressive', 'Has_Name',
+                'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor']
+    feature_cols = [col for col in feature_cols if col in train_df.columns]
+    num_cols = [col for col in num_cols if col in feature_cols]
+    cat_cols = [col for col in cat_cols if col in feature_cols]
     target_col = 'Days_in_Shelter_Label'
 
     # Split data into training and testing sets
@@ -245,12 +280,8 @@ def sklearn_pipeline(train_df,validate_df):
     # Define the column transformer with OneHotEncoder for categorical columns and StandardScaler for numerical columns
     preprocessor = ColumnTransformer(
         transformers=[
-            ('num', StandardScaler(), ['Age_inDays_at_Income', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
-                'Breed_Embedding_Cluster', 'Subtype_Embedding_Cluster','Intake_Year','Intake_Month',
-                'Intake_Day','Birth_Year','Birth_Year','Birth_Day']),
-            ('cat', OneHotEncoder(), ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
-                'Intake_Condition','Age_Group', 'Is_Aggressive', 'Has_Name',
-                'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor'])
+            ('num', StandardScaler(), num_cols),
+            ('cat', OneHotEncoder(), cat_cols)
         ])
 
     return preprocessor, X_train, y_train, X_test, y_test

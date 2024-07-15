@@ -1,6 +1,10 @@
 from sodapy import Socrata
 import pandas as pd
-
+import os
+import sys
+sys.path.insert(1, os.getcwd())
+sys.path.insert(2, os.path.dirname(os.getcwd()))
+from utils import *
 ###############################################################################
 # Constants
 ###############################################################################
@@ -39,9 +43,20 @@ def get_data_from_API(start_date, end_date):
         "924a-vesw",
         where=f"intake_date between '{start_date_str}' and '{end_date_str}'",
     )
-
     results_df = pd.DataFrame.from_records(results)
-
+    params = {
+        'na_data': 'fill',
+        'drop_outlier_days': False,
+        'embed':True,
+        'buckets':[-1,3,14,30,100,99999999],
+        'sample_dict':
+            {
+            'stratify_col':'Type',
+            'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
+            }
+        }
+    results_df = load_df(params, data=results_df, split_data=False)
+    print('\ndata pipeline complete\n')
     return results_df
 
 

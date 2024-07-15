@@ -23,16 +23,16 @@ with st.form("date_form"):
 
 if submitted:
     df = get_data_from_API(start_date, end_date)
-    # TODO: Run data through data pipeline - could be empty
+    # TODO: Run data through data pipeline - could be empty -> complete!
     # TODO: Load model and generate prediction
     # TODO: Set up plots
 
     # vvvv Test code vvvv
-    df["Length of Stay"] = np.random.randint(0, 5, len(df))
-    df["Color"] = df["Length of Stay"].apply(lambda x: TIME_BIN_DICT[x])
-    df["Length of Stay"] += 1  # So bars actually show up on plot
+    # df["Length of Stay"] = np.random.randint(0, 5, len(df))
+    # df["Color"] = df["Length of Stay"].apply(lambda x: TIME_BIN_DICT[x])
+    # df["Length of Stay"] += 1  # So bars actually show up on plot
 
-    st.bar_chart(data=df, x="id", y="Length of Stay", color="Color", horizontal=True)
+    st.bar_chart(data=df, x="Animal_ID", y="Days_in_Shelter_Label", color="Color", horizontal=True)
 
     st.download_button(
         "Export Report",

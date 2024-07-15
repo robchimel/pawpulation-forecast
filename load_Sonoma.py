@@ -1,7 +1,6 @@
 import pandas as pd
-import numpy as np
 
-def load_Sonoma(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
+def load_Sonoma(params, data = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
     '''
     prepare sonoma data to be merged with other datasets. clean and do feature engineering
     '''
@@ -30,7 +29,25 @@ def load_Sonoma(params, name = 'Animal_Shelter_Intake_and_Outcome_20240517.csv')
         'Location': 'str',
         'Count': 'int'
     }
-    df =  pd.read_csv(name, dtype=dtype_dict)
+    if isinstance(data, pd.DataFrame):
+            # 'intake_total':, 
+        colmap = {
+            'name':'Name', 'type':'Type', 'breed':'Breed', 'color':'Color', 'sex':'Sex', 
+            'size':'Size', 'impound_number':'Impound Number',
+            'kennel_number':'Kennel Number', 'id':'Animal ID', 'intake_date':'Intake Date', 
+            'days_in_shelter':'Days in Shelter', 
+            'intake_condition':'Intake Condition', 'intake_jurisdiction':'Intake Jurisdiction',
+            'date_of_birth':'Date Of Birth', 
+            'outcome_date':'Outcome Date', 'outcome_type':'Outcome Type',
+            'outcome_subtype':'Outcome Subtype', 'outcome_condition':'Outcome Condition', 
+            'outcome_jurisdiction':'Outcome Jurisdiction',
+            'zip_code':'Outcome Zip Code', 'location':'Location',
+            'intake_subtype':'Intake_Subtype','intake_type':'Intake_Type'
+        }
+        df = data.rename(columns=colmap)
+        df['Date Of Birth'] = pd.to_datetime(df['Date Of Birth'], errors='coerce')
+    else:
+        df =  pd.read_csv(data, dtype=dtype_dict)
     df['Date Of Birth'].fillna('01/01/1900', inplace=True)
     # Convert 'Date Of Birth' to datetime after reading the CSV df['Date Of Birth'] = pd.to_datetime(df['Date Of Birth'], errors='coerce')
     df['Date Of Birth'] = pd.to_datetime(df['Date Of Birth'], errors='coerce')
@@ -114,7 +131,10 @@ def clean_df(df, params):
     df.drop_duplicates(inplace=True)
     # Drop rows where 'Animal ID' is missing as it is a critical identifier
     df.dropna(subset=['Animal_ID'], inplace=True)
-    df.drop(columns=['Count'], inplace=True)
+    if 'intake_total' in df.columns:
+        df.drop(columns=['intake_total'], inplace=True)
+    if 'Count' in df.columns:
+        df.drop(columns=['Count'], inplace=True)
     # update TORTIE to Tortoiseshell
     df.loc[df.Color=='TORTIE', 'Color'] = 'Tortoiseshell'.upper()
     
