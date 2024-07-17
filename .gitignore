@@ -159,8 +159,9 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-
-glove.6B
+glove.6B/glove.6B.100d.txt
+glove.6B/glove.6B.200d.txt
+glove.6B/glove.6B.300d.txt
 # DAS_Data.csv
 Austin_Animal_Center_Intakes_20240609.csv
 Austin_Animal_Center_Outcomes_20240609.csv
