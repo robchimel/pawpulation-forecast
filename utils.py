@@ -12,11 +12,12 @@ from load_Sonoma import *
 from load_Austin import *
 import os
 import sys
+from datetime import datetime
 sys.path.insert(1, os.getcwd())
 sys.path.insert(2, os.path.dirname(os.getcwd()))
 
 
-def load_df(params, data = False, no_outcome_cols=True, split_data=True):
+def load_df(params, data = False, no_outcome_cols=True, split_data=True, checked_out=True):
     '''
         params options
 
@@ -112,7 +113,10 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True):
         final_cols = [col for col in final_cols if col in df.columns]
 
         df = df[final_cols]
-    
+    if checked_out == False:
+        df['In_Shelter'] = True
+        df.loc[df.Outcome_Date < datetime.now(), 'In_Shelter'] = False
+        
     if split_data:
         train_df, validate_df, test_df = train_validate_test_split(df, params)
         return train_df, validate_df, test_df
@@ -254,18 +258,28 @@ def embed_subtype(df, embeddings_index):
 
 def sklearn_pipeline(train_df,validate_df):
     # Define feature columns and target column
-    feature_cols = ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
-       'Intake_Condition', 'Multiple_Visit_Count',
-       'Age_inDays_at_Income', 'Age_Group', 'Is_Aggressive', 'Has_Name',
-       'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor', 'Color_Embedding_Cluster',
-       'Breed_Embedding_Cluster', 'Subtype_Embedding_Cluster',
-       'Intake_Year','Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day']
-    num_cols = ['Age_inDays_at_Income', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
-                'Breed_Embedding_Cluster', 'Subtype_Embedding_Cluster','Intake_Year','Intake_Month',
-                'Intake_Day','Birth_Year','Birth_Year','Birth_Day']
-    cat_cols = ['Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
+    
+    # dropped 'Breed', 'Color' these had issues with pipeline
+    feature_cols = [
+                    'Kennel_Number', 'Intake_Jurisdiction', 
+                    'Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
+                    'Intake_Condition', 'Multiple_Visit_Count',
+                    'Age_inDays_at_Income', 'Age_Group', 'Is_Aggressive', 'Has_Name',
+                    'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor', 'Color_Embedding_Cluster',
+                    'Breed_Embedding_Cluster', 
+                    'Intake_Year','Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day'
+                ]
+    num_cols = [
+                'Age_inDays_at_Income', 'Multiple_Visit_Count', 'Color_Embedding_Cluster',
+                'Breed_Embedding_Cluster', 'Intake_Year','Intake_Month',
+                'Intake_Day','Birth_Year','Birth_Year','Birth_Day'
+                ]
+    cat_cols = [
+                'Kennel_Number', 'Intake_Jurisdiction'
+                'Type', 'Sex', 'Size', 'Intake_Type', 'Intake_Subtype',
                 'Intake_Condition','Age_Group', 'Is_Aggressive', 'Has_Name',
-                'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor']
+                'Is_Fixed', 'Is_Mixed_Breed', 'Is_Multicolor'
+                ]
     feature_cols = [col for col in feature_cols if col in train_df.columns]
     num_cols = [col for col in num_cols if col in feature_cols]
     cat_cols = [col for col in cat_cols if col in feature_cols]
@@ -300,3 +314,4 @@ if __name__ == '__main__':
                 }
             }
     train_df, validate_df, test_df = load_df(params)
+    

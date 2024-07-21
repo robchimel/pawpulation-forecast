@@ -1,8 +1,12 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-
 from dashboard_utils import MODEL_COLS, TIME_BIN_DICT
+import os
+import sys
+sys.path.insert(1, os.getcwd())
+sys.path.insert(2, os.path.dirname(os.getcwd()))
+from utils import *
 
 FORM_DATA = {}
 
@@ -24,7 +28,20 @@ if submitted:
     df = pd.DataFrame(FORM_DATA, index=[0])
 
     # TODO: Run df through data pipeline
+    params = {
+        'na_data': 'fill',
+        'drop_outlier_days': False,
+        'embed':True,
+        'buckets':[-1,3,14,30,100,99999999],
+        'sample_dict':
+            {
+            'stratify_col':'Type',
+            'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
+            }
+        }
+    results_df = load_df(params, data=df, split_data=False, checked_out=True)
     # TODO: Load model and generate prediction
+
     # TODO: Format output
 
     # vvvv Test code vvvv

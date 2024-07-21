@@ -55,7 +55,7 @@ def get_data_from_API(start_date, end_date):
             'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
             }
         }
-    results_df = load_df(params, data=results_df, split_data=False)
+    results_df = load_df(params, data=results_df, split_data=False, checked_out=True)
     print('\ndata pipeline complete\n')
     return results_df
 
