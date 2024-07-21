@@ -5,8 +5,8 @@ st.image('https://github.com/robchimel/MIDS210-FURever-Home-Forecast/raw/main/mv
 st.title(brown:['Pawpulation Forecast - HOMEPAGE DRAFT'] :dog2::black_cat:)
 
 st.header(black:['Mission'])
-st.markdown(""" Pawpulation Forecast aims to help animal shelters better allocate limited animal care resources by 
-providing insights on how long their animals will require shelter once they are taken in.""")
+st.markdown(""" Help animal shelters better allocate limited animal care resources by 
+providing insights on how long their animals will stay once they are taken in.""")
 
 st.header(black:['Motivation']
 st.markdown(""" Animal shelters have limited resources, making it critical to optimize care for animals without a 
