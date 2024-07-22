@@ -17,7 +17,7 @@ sys.path.insert(1, os.getcwd())
 sys.path.insert(2, os.path.dirname(os.getcwd()))
 
 
-def load_df(params, data = False, no_outcome_cols=True, split_data=True, checked_out=True):
+def load_df(params, data = False, no_outcome_cols=True, split_data=True):
     '''
         params options
 
@@ -49,7 +49,7 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True, checked
             * please use [-1,3,14,30,100,99999999] as agreed upon based on shelter feedback
     '''
     if isinstance(data, pd.DataFrame):
-        df = load_Sonoma(params, data)
+        df = load_Sonoma(params, data, API=True)
         df['dataset'] = 'API'
         df['Days_in_Shelter'] = df['Days_in_Shelter'].astype('int64')
         # API_data = True
@@ -97,6 +97,8 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True, checked
     class_labels = [i for i in range(len(params['buckets'])-1)]
     df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)
     # df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
+    df['Prediction'] = True
+    df.loc[df.Outcome_Date != 'Unknown', 'Prediction'] = False
     if no_outcome_cols==True:
         final_cols = ['Name', 'Type', 'Breed', 'Color', 'Sex', 'Size', 'Date_Of_Birth',
             'Impound_Number', 'Kennel_Number', 'Animal_ID', 'Intake_Date',
@@ -108,14 +110,14 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True, checked
             'Color_Embedding', 'Color_Embedding_Cluster', 'Breed_Embedding',
             'Breed_Embedding_Cluster', 'Intake_Subtype_Embedding',
             'Subtype_Embedding_Cluster', 'Days_in_Shelter_Label','Intake_Year',
-            'Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day'
+            'Intake_Month','Intake_Day','Birth_Year','Birth_Month','Birth_Day',
+            'Prediction'
             ]
         final_cols = [col for col in final_cols if col in df.columns]
 
         df = df[final_cols]
-    if checked_out == False:
-        df['In_Shelter'] = True
-        df.loc[df.Outcome_Date < datetime.now(), 'In_Shelter'] = False
+        
+    
         
     if split_data:
         train_df, validate_df, test_df = train_validate_test_split(df, params)

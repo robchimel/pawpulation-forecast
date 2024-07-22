@@ -1,6 +1,6 @@
 import pandas as pd
 
-def load_Sonoma(params, data = 'Animal_Shelter_Intake_and_Outcome_20240517.csv'):
+def load_Sonoma(params, data = 'Animal_Shelter_Intake_and_Outcome_20240517.csv', API=False):
     '''
     prepare sonoma data to be merged with other datasets. clean and do feature engineering
     '''
@@ -53,7 +53,7 @@ def load_Sonoma(params, data = 'Animal_Shelter_Intake_and_Outcome_20240517.csv')
     df['Date Of Birth'] = pd.to_datetime(df['Date Of Birth'], errors='coerce')
     df['Intake Date'] = pd.to_datetime(df['Intake Date'], errors='coerce')
     df['Outcome Date'] = pd.to_datetime(df['Outcome Date'], errors='coerce')
-    df = clean_df(df, params)
+    df = clean_df(df, params, API)
     df = feature_eng(df)
 
     return df
@@ -65,6 +65,11 @@ def feature_eng(df):
     df['Multiple_Visit_Count'] = df.groupby('Animal_ID')['Animal_ID'].transform('count')
 
     # calculate age at time of adoption
+
+    df = df[df.Date_Of_Birth!='Unknown']
+    df = df[df.Intake_Date!='Unknown']
+    df['Intake_Date'] = pd.to_datetime(df['Intake_Date'], errors='coerce')
+    df['Date_Of_Birth'] = pd.to_datetime(df['Date_Of_Birth'], errors='coerce')
     df['Age_inDays_at_Income'] = (df['Intake_Date'] - df['Date_Of_Birth']).dt.days
 
     # Create age groups
@@ -75,7 +80,7 @@ def feature_eng(df):
     # df['Age_Group'].fillna('Unknown', inplace=True)
 
     # Example of feature interaction
-    # df['Is_Aggressive'] = df['Outcome_Subtype'].apply(lambda x: 1 if 'AGGRESSIVE' in str(x) else 0)
+    df['Is_Aggressive'] = int(-1)
 
     # 1 if animal came to shelter with name, 0 f shelter named animal
     df['Has_Name'] = df['Name'].apply(lambda x: 0 if ('*' in str(x) or 'Unknown' == str(x)) else 1)
@@ -94,7 +99,7 @@ def feature_eng(df):
 
     return df
 
-def clean_df(df, params):
+def clean_df(df, params, API):
     '''
     clean_df handles null data, renames columns to be more friendly in python, drops duplicates and more!
 
@@ -125,7 +130,10 @@ def clean_df(df, params):
     # drop Other
     df = df[df.Type != 'OTHER']
     # remove animals without an outcome or intake date
-    df = df[~df.Outcome_Date.isnull()]
+    if API==False:
+        df = df[~df.Outcome_Date.isnull()]
+    else:
+        df.loc[df.Outcome_Date.isnull(), 'Days_in_Shelter'] = -1
     df = df[~df.Intake_Date.isnull()]
     # Remove duplicates
     df.drop_duplicates(inplace=True)
@@ -137,13 +145,13 @@ def clean_df(df, params):
         df.drop(columns=['Count'], inplace=True)
     # update TORTIE to Tortoiseshell
     df.loc[df.Color=='TORTIE', 'Color'] = 'Tortoiseshell'.upper()
-    
+    df.loc[df.Intake_Type=='OS APPT'] = 'Unknown'
     # place nan token for remaining columns
     for col in df.columns:
         null_count = df[col][df[col].isnull()].shape[0]
         if null_count!= 0 and params['na_data'] != False:
             if params['na_data'].lower() == 'fill':
-                if (df[col].dtype != float and df[col].dtype != int):
+                if (df[col].dtype != float or df[col].dtype != int):
                     print(f"replace null values in {col} with 'Unknown'")
                     df[col].fillna('Unknown', inplace=True)
                 else:
