@@ -9,7 +9,7 @@ from utils import *
 # Constants
 ###############################################################################
 
-MODEL_COLS = range(1, 6)  # TODO: populate with actual model columns
+MODEL_COLS = ["Name", "Type", "Breed", "Color", "Sex", "Size", "Date_Of_Birth", "Kennel_Number", "Intake_Date", "Intake_Type", "Intake_Subtype", "Intake_Condition", "Intake_Jurisdiction"]  # TODO: populate with actual model columns
 
 TIME_BIN_DICT = {
     0: "0-3 Days",
