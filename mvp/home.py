@@ -16,7 +16,7 @@ predicting this information early due to their limited knowledge about the anima
 provide animal shelters with a length-of-stay prediction report for each animal that is in their care,regardless of how recent 
 their intake date is, when given a set number of attributes and features about the animal.""")
 
-st.head(black:['Solution']
+st.header(black:['Solution']
 st.markdown(""" For this project, we use multi-stage XGBoost modeling based on length-of-stay bucket labels to predict 
 the length-of-stay bucket an animal will fall into based on limited information known about the animal during a typical 
 intake process and/or as care is provided post-intake.
@@ -30,12 +30,12 @@ Featuring engineering was also performed on these datasets to improve model accu
 label based on how many days they were at the animal shelter. In addition, new features were developed from scraping keywords, 
 embedding notes, and date summaries. In total, our dataset includes X descriptive attributes and 14 features of each animal record.""")
 
-st.head(black:['Evaluation']
+st.header(black:['Evaluation']
 st.markdown(""" To evaluate our models, we use accuracy scores, classification reports, and confusion matrices to understand the 
 performance of our classification models. You can find some of our model results below:""")
 ##st.image('ENTER IMAGE OF MODEL PERFORMANCE')
 
-st.head(black:['Key Learnings & Impact']
+st.header(black:['Key Learnings & Impact']
 st.markdown(""" We aimed to find the best approach for our length-of-stay prediction model. Not many academic papers had 
 similar approaches to build upon, but some work has been published to solve a similar problem with similar data. 
 For example, Bronzi et al developed an outcome prediction model (https://www.causeweb.org/usproc/eusrc/2020/program/8) 
@@ -53,7 +53,7 @@ very similar from one another and for classes that had low accuracy despite havi
 st.header(black:['Team'])
 st.image('https://github.com/robchimel/MIDS210-FURever-Home-Forecast/raw/main/mvp/team-image.jpg')
 
-st.head(black:['Acknowledgements']
+st.header(black:['Acknowledgements']
 st.markdown(""" We are grateful to have the guidance and encouragement from our Capstone Advisors, 
 Dr. Korin Reid and Dr. Puya H. Vahabi, of the Masters in Data Science program at School of Information, 
 University of California, Berkeley.
