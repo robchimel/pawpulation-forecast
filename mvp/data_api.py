@@ -29,31 +29,35 @@ with st.form("date_form"):
 if submitted:
     # Run data through data pipeline
     df = get_data_from_API(start_date, end_date)
-    # Load model and generate prediction
-    with open(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl'), 'rb') as file:
-        XGBpipeline = pickle.load(file)
-    # Predict on the test data
-    _, features, _, _, _ = sklearn_pipeline(df, df)
-    df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
-    # Days_in_Shelter_Label_and_Prediction captures Days in Shelter prediction
-    # if animal has not been adopted
-    # if animal has been adopted (IE: df.Prediction==False) set this column to the actual days in shelter
-    df['Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Prediction
-    df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Label
 
-    # TODO: Set up plots
+    if len(df) == 0:
+        st.error("No data available for the selected date range. Please try again.")
+    else:
+        # Load model and generate prediction
+        with open(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl'), 'rb') as file:
+            XGBpipeline = pickle.load(file)
+        # Predict on the test data
+        _, features, _, _, _ = sklearn_pipeline(df, df)
+        df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
+        # Days_in_Shelter_Label_and_Prediction captures Days in Shelter prediction
+        # if animal has not been adopted
+        # if animal has been adopted (IE: df.Prediction==False) set this column to the actual days in shelter
+        df['Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Prediction
+        df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Label
 
-    # vvvv Test code vvvv
-    # df["Length of Stay"] = np.random.randint(0, 5, len(df))
-    # df["Color"] = df["Length of Stay"].apply(lambda x: TIME_BIN_DICT[x])
-    # df["Length of Stay"] += 1  # So bars actually show up on plot
+        # TODO: Set up plots
 
-    st.bar_chart(data=df, x="Animal_ID", y="Days_in_Shelter_Label_and_Prediction", color="Prediction", horizontal=True)
+        # vvvv Test code vvvv
+        # df["Length of Stay"] = np.random.randint(0, 5, len(df))
+        # df["Color"] = df["Length of Stay"].apply(lambda x: TIME_BIN_DICT[x])
+        # df["Length of Stay"] += 1  # So bars actually show up on plot
 
-    st.download_button(
-        "Export Report",
-        data=df.to_csv(),
-        file_name=f"{datetime.today().strftime("%Y%m%d")}_pawpulation_forecast.csv",
-        mime="text/csv",
-    )
-    # ^^^^ Test code ^^^^
+        st.bar_chart(data=df, x="Animal_ID", y="Days_in_Shelter_Label_and_Prediction", color="Prediction", horizontal=True)
+
+        st.download_button(
+            "Export Report",
+            data=df.to_csv(),
+            file_name=f"{datetime.today().strftime("%Y%m%d")}_pawpulation_forecast.csv",
+            mime="text/csv",
+        )
+        # ^^^^ Test code ^^^^
