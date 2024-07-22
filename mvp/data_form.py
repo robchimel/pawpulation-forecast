@@ -39,7 +39,7 @@ if submitted:
             'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
             }
         }
-    results_df = load_df(params, data=df, split_data=False, checked_out=True)
+    results_df = load_df(params, data=df, split_data=False)
     # TODO: Load model and generate prediction
 
     # TODO: Format output
