@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta
 from sodapy import Socrata
 import pandas as pd
+import altair as alt
+import streamlit as st
 import os
 import sys
 sys.path.insert(1, os.getcwd())
@@ -23,6 +26,7 @@ TIME_BIN_DICT = {
 ###############################################################################
 # Functions
 ###############################################################################
+@st.cache_data
 def get_data_from_API(start_date, end_date):
     """
     Retrieves data from the Sonoma County API for animals with an intake date
@@ -62,6 +66,45 @@ def get_data_from_API(start_date, end_date):
         print('\ndata pipeline complete\n')
         return results_df
 
+def plotting_df_from_pred_df(pred_df):
+    plot_df = pd.DataFrame(pred_df[["Animal_ID", "Intake_Date", "Days_in_Shelter_Prediction", "Days_in_Shelter_Label_and_Prediction", "Prediction"]])
+    plot_df["LOS_Barlength"] = plot_df["Days_in_Shelter_Prediction"] + 1
+    plot_df["LOS_Text"] = plot_df["Days_in_Shelter_Prediction"].apply(lambda x: TIME_BIN_DICT[x])
+    plot_df["Calendar_Legend_Label"] = plot_df.Prediction.apply(lambda x: {False: "Actual Stay", True: "Predicted Stay"}[x])
+
+    plot_df["LOS_Days"] = plot_df["Days_in_Shelter_Label_and_Prediction"]
+    plot_df.loc[plot_df.Prediction.eq(True) & plot_df.Days_in_Shelter_Prediction.eq(0), "LOS_Days"] = 3
+    plot_df.loc[plot_df.Prediction.eq(True) & plot_df.Days_in_Shelter_Prediction.eq(1), "LOS_Days"] = 14
+    plot_df.loc[plot_df.Prediction.eq(True) & plot_df.Days_in_Shelter_Prediction.eq(2), "LOS_Days"] = 30
+    plot_df.loc[plot_df.Prediction.eq(True) & plot_df.Days_in_Shelter_Prediction.eq(3), "LOS_Days"] = 100
+    plot_df.loc[plot_df.Prediction.eq(True) & plot_df.Days_in_Shelter_Prediction.eq(4), "LOS_Days"] = 150
+    plot_df.loc[plot_df.Prediction.eq(False) & plot_df.LOS_Days.eq(0), "LOS_Days"] = 1 # Make 1 day minimum to display
+
+    plot_df["Outtake_Date"] = plot_df.apply(lambda x: x.Intake_Date + timedelta(days=x.LOS_Days), axis=1)
+
+    return plot_df
+
+def plot_predictions(plot_df, sort_field, order):
+    chart = alt.Chart(plot_df[plot_df.Prediction.eq(True)]).mark_bar(orient="horizontal").encode(
+        x=alt.X("LOS_Barlength", title="Predicted Bin", axis=alt.Axis(ticks=False, labels=False)),
+        y=alt.Y("Animal_ID", title="Animal ID", sort=alt.EncodingSortField(field=sort_field, op="max", order=order)),
+        color=alt.Color("LOS_Text", title="Duration", scale=alt.Scale(domain=list(TIME_BIN_DICT.values()))),
+    ).properties(title="Length-of-Stay Predictions", width=500)
+
+    return chart
+
+def plot_calendar_view(plot_df, sort_field, order):
+    # Brush code obtained from https://stackoverflow.com/a/78118916
+    brush = alt.selection_interval(encodings=['x'], bind='scales')
+
+    chart = alt.Chart(plot_df).mark_bar(orient="horizontal").encode(
+        x=alt.X("Intake_Date", title="Intake Date"),
+        x2=alt.X2("Outtake_Date", title="Outcome Date"),
+        y=alt.Y("Animal_ID",  title="Animal ID", sort=alt.EncodingSortField(field=sort_field, op="max", order=order)),
+        color=alt.Color("Calendar_Legend_Label", title="Type"),
+    ).add_params(brush).properties(title="Length-of-Stay Overview", width=500)
+
+    return chart
 
 ###############################################################################
 # Classes

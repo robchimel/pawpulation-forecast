@@ -1,15 +1,24 @@
 from datetime import datetime
-
 import numpy as np
 import pandas as pd
 import streamlit as st
 import pickle
-from dashboard_utils import TIME_BIN_DICT, get_data_from_API
+from dashboard_utils import TIME_BIN_DICT, get_data_from_API, plotting_df_from_pred_df, plot_predictions, plot_calendar_view
 import os
 import sys
 sys.path.insert(1, os.getcwd())
 sys.path.insert(2, os.path.dirname(os.getcwd()))
 from utils import *
+
+PLOT_FUNCS = {
+    "Prediction Summary": plot_predictions,
+    "Calendar Overview": plot_calendar_view
+}
+
+SORT_FIELD = {
+    "Animal ID": "Animal_ID",
+    "Length of Stay": "LOS_Days"
+}
 
 st.markdown("""
 # Generate a Report
@@ -23,7 +32,14 @@ with st.form("date_form"):
         (datetime.today(), datetime.today()),
         max_value=datetime.today(),
     )
-    submitted = st.form_submit_button("Generate Predictions")
+
+    plot_type = st.radio("Plot Style", PLOT_FUNCS.keys(), index=0)
+
+    sort_field = st.radio("Sort by", SORT_FIELD.keys(), index=0)
+
+    sort_style = st.radio("Order", ["ascending", "descending"], index=0)
+
+    submitted = st.form_submit_button("Generate Report")
 
 
 if submitted:
@@ -45,19 +61,14 @@ if submitted:
         df['Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Prediction
         df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Label
 
-        # TODO: Set up plots
-
-        # vvvv Test code vvvv
-        # df["Length of Stay"] = np.random.randint(0, 5, len(df))
-        # df["Color"] = df["Length of Stay"].apply(lambda x: TIME_BIN_DICT[x])
-        # df["Length of Stay"] += 1  # So bars actually show up on plot
-
-        st.bar_chart(data=df, x="Animal_ID", y="Days_in_Shelter_Label_and_Prediction", color="Prediction", horizontal=True)
-
+        # Export option
         st.download_button(
             "Export Report",
             data=df.to_csv(),
             file_name=f"{datetime.today().strftime("%Y%m%d")}_pawpulation_forecast.csv",
             mime="text/csv",
         )
-        # ^^^^ Test code ^^^^
+        # Plot data
+        plot_df = plotting_df_from_pred_df(df)
+        chart = PLOT_FUNCS[plot_type](plot_df, SORT_FIELD[sort_field], sort_style)
+        chart
