@@ -1,5 +1,6 @@
 import streamlit as st
-
+import os
+print(f'home is here, {os.getcwd()}')
 st.image('banner-image.jpg')
 
 st.title('Pawpulation Forecast :dog2::black_cat:')
