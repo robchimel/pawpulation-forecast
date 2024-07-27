@@ -64,10 +64,11 @@ if submitted:
         df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Label
 
         # Export option
+        time_stamp = datetime.today().strftime("%Y%m%d")
         st.download_button(
             "Export Report",
             data=df.to_csv(),
-            file_name=f"{datetime.today().strftime("%Y%m%d")}_pawpulation_forecast.csv",
+            file_name=f"{time_stamp}_pawpulation_forecast.csv",
             mime="text/csv",
         )
         # Plot data
