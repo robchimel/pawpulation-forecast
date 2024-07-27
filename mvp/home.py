@@ -38,11 +38,11 @@ st.header('Evaluation')
 st.markdown(""" To evaluate our models, we use accuracy scores, classification reports, and confusion matrices to understand the 
 performance of our classification models. You can find our model results below:""")
 st.markdown(""" Sonoma Animal Shelter (XGBoost: 0.66 accuracy, 0.56 f1-score)""")
-st.image('./sonoma-result.jpg')
+st.image('./sonoma-results.jpg')
 st.markdown(""" Austin Animal Shelter (XGBoost: 0.32 accuracy, 0.14 f1-score)""")
-st.image('./austin-result.jpg')
+st.image('./austin-results.jpg')
 st.markdown(""" Denver Animal Shelter (XGBoost: 0.04 accuracy, 0.02 f1-score)""")
-st.image('./denver-result.jpg')
+st.image('./denver-results.jpg')
 
 st.header('Key Learnings & Impact')
 st.markdown(""" We aimed to find the best approach for our length-of-stay prediction model. Not many academic papers had similar 
@@ -61,9 +61,9 @@ Denver data set and by +.19 accuracy and +.24 f1-score for Austin Shelter once t
 """)
 
 st.markdown(""" Austin Animal Shelter Customized (XGBoost: 0.51 accuracy, 0.38 f1-score)""")
-st.image('./austin-result-customized.jpg')
+st.image('./austin-results-customized.jpg')
 st.markdown(""" Denver Animal Shelter Customized (XGBoost: 0.61 accuracy, 0.39 f1-score)""")
-st.image('./denver-result-customized.jpg')
+st.image('./denver-results-customized.jpg')
 
 st.header('Who We Are')
 st.image('./team-image.jpg')
