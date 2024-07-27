@@ -1,6 +1,4 @@
 from datetime import datetime
-import numpy as np
-import pandas as pd
 import streamlit as st
 import pickle
 from dashboard_utils import TIME_BIN_DICT, get_data_from_API, plotting_df_from_pred_df, plot_predictions, plot_calendar_view
@@ -50,7 +48,11 @@ if submitted:
         st.error("No data available for the selected date range. Please try again.")
     else:
         # Load model and generate prediction
-        with open(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl'), 'rb') as file:
+        if os.path.isfile(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')):
+            pipeline_path = os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')
+        if os.path.isfile(os.path.join(os.getcwd(), 'XGBpipeline.pkl')):
+            pipeline_path = os.path.join(os.getcwd(), 'XGBpipeline.pkl')
+        with open(pipeline_path, 'rb') as file:
             XGBpipeline = pickle.load(file)
         # Predict on the test data
         _, features, _, _, _ = sklearn_pipeline(df, df)

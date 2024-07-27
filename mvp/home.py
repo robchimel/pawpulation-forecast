@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.image('./banner-image.jpg')
+st.image('banner-image.jpg')
 
 st.title('Pawpulation Forecast :dog2::black_cat:')
 
@@ -51,7 +51,7 @@ very similar from one another and for classes that had low accuracy despite havi
 """)
 
 st.header('Who We Are')
-st.image('./team-image.jpg')
+st.image('team-image.jpg')
 
 st.header('Acknowledgements')
 st.markdown(""" We are grateful to have the guidance and encouragement from our Capstone Advisors, 
