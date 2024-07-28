@@ -33,13 +33,9 @@ with st.form("intake_form"):
 
     FORM_DATA['Kennel Number'] = st.text_input("What is their kennel number?", 'DA21')
 
-    FORM_DATA['Animal ID'] = st.text_input("What is their kennel number?", 'A422697')
-
-    FORM_DATA['Impound Number'] = st.text_input("What is their impound number?", 'K23-046984')
-
     FORM_DATA['Intake Date'] = st.date_input("When did they go through intake processing?", value=None)
 
-    FORM_DATA['Days in Shelter'] = st.date_input("How many days have they been in the shelter so far?", value=35)
+    FORM_DATA['Days in Shelter'] = st.date_input("How many days have they been in the shelter?", value=35)
 
     FORM_DATA['Intake Type'] = st.selectbox("What is their intake type?",
     ("Stray", "Owner Surrender", "Confiscate", "Quarantine", "Adoption Return", "Transfer", "Born Here", "Unknown"), index=None)
@@ -51,7 +47,7 @@ with st.form("intake_form"):
      "fld_livstk", "over the counter_coronr", "over the counter_evict", "mom os", "over the counter_emerge", "Unknown"),index=None)
 
     FORM_DATA['Intake Condition'] = st.selectbox(
-    "What is their condition",
+    "What is their condition?",
     ("Healthy", "Treatable/Rehab", "Untreatable", "Treatable/Manageable","Unknown"),index=None)
 
     FORM_DATA['Intake Jurisdiction'] = st.selectbox(
