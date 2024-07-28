@@ -18,53 +18,40 @@ Please input the requested intake data below. When finished, click the
 
 with st.form("intake_form"):
     FORM_DATA[1] = st.text_input("What is their name?", None)
-    st.write("Their name is:", FORM_DATA[1])
 
-    FORM_DATA[2] = st.selectbox("What is their type?",("Dog", "Cat"))
-    st.write("You selected:", FORM_DATA[2])
+    FORM_DATA[2] = st.selectbox("What is their type?",("Dog", "Cat"),None)
 
     FORM_DATA[3] = st.text_input("What is their breed?", None)
-    st.write("Their breed is:", FORM_DATA[3])
 
     FORM_DATA[4] = st.text_input("What is their color?", None)
-    st.write("Their color is:", FORM_DATA[4])
 
     FORM_DATA[5] = st.selectbox("What is their sex?", ("Female", "Male", "Unknown"), index=None)
-    st.write("You selected:", FORM_DATA[5])
 
     FORM_DATA[6] = st.selectbox("What is their size?", ("Small", "Medium", "Kittn", "Large", "Toy", "Puppy", "X-LRG", "Unknown"), index=None)
-    st.write("You selected:", FORM_DATA[6])
 
     FORM_DATA[7] = st.date_input("When is their birthday?", value=None)
-    st.write("Their birthday is:", FORM_DATA[7])
 
     FORM_DATA[8] = st.text_input("What is their kennel number?", None)
-    st.write("Their kennel number is:", FORM_DATA[8])
 
     FORM_DATA[9] = st.date_input("When did they go through intake processing?", value=None)
-    st.write("Their intake date is:", FORM_DATA[9])
 
     FORM_DATA[10] = st.selectbox("What is their intake type?",
     ("Stray", "Owner Surrender", "Confiscate", "Quarantine", "Adoption Return", "Transfer", "Born Here", "Unknown"), index=None)
-    st.write("You selected:", FORM_DATA[10])
 
-    FORM_DATA[11] = st.selectbox("What is their intake type?",
+    FORM_DATA[11] = st.selectbox("What is their intake subtype?",
     ("Field", "Over the counter", "Comm cat", "Fld_arrest", "phone", "vet_hosp", "fld_stray", "fld_hosptl", "priv_shelt", "born_here",
      "fld_coronr", "fld_cruel", "mun_shelt", "field_return to owner", "fld_evict", "field_os", "fld_aband", "email", "over the counter_os",
      "mom stray", "over the counter_return to owner", "over the counter_owned", "rescue_grp", "fld_invest", "over the counter_arrest", "fld_owned",
      "fld_livstk", "over the counter_coronr", "over the counter_evict", "mom os", "over the counter_emerge", "Unknown"),index=None)
-    st.write("You selected:", FORM_DATA[11])
 
     FORM_DATA[12] = st.selectbox(
-    "What is their intake type?",
+    "What is their condition",
     ("Healthy", "Treatable/Rehab", "Untreatable", "Treatable/Manageable","Unknown"),index=None)
-    st.write("You selected:", FORM_DATA[12])
 
     FORM_DATA[13] = st.selectbox(
-    "What is their intake type?",
+    "What is your shelter's jurisdiction?",
     ("Santa Rosa", "County", "Windsor", "Out of County", "Rohnert Park", "Healdsburg", "Sonoma", "Petaluma", "Cloverdale", "sebastopol",
      "tribal resv", "Cotati", "Unknown"),index=None)
-    st.write("You selected:", FORM_DATA[13])
 
     submitted = st.form_submit_button("Generate Prediction")
 
@@ -103,13 +90,23 @@ if submitted:
             }
         }
     results_df = load_df(params, data=df, split_data=False)
+    
     # TODO: Load model and generate prediction
-
+    
+    with open(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl'), 'rb') as file:
+        XGBpipeline = pickle.load(file)
+        
+        # Predict on the test data
+        _, features, _, _, _ = sklearn_pipeline(results_df, results_df)
+        results_df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
+        # Days_in_Shelter_Label_and_Prediction captures Days in Shelter prediction
+        # if animal has not been adopted
+        # if animal has been adopted (IE: df.Prediction==False) set this column to the actual days in shelter
+        results_df['Days_in_Shelter_Label_and_Prediction'] = results_df.Days_in_Shelter_Prediction
+        results_df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = results_df.Days_in_Shelter_Label
+    
     # TODO: Format output
-
-    # vvvv Test code vvvv
-    prediction = np.random.randint(0, 5)
-    prediction_text = TIME_BIN_DICT[prediction]
+    
+    prediction_text = results_df.Days_in_Shelter_Label
 
     st.markdown(f"The animal is predicted to stay for {prediction_text}.")
-    # ^^^^ Test code ^^^^
