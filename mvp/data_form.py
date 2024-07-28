@@ -38,18 +38,18 @@ with st.form("intake_form"):
     FORM_DATA[10] = st.selectbox("What is their intake type?",
     ("Stray", "Owner Surrender", "Confiscate", "Quarantine", "Adoption Return", "Transfer", "Born Here", "Unknown"), index=None)
 
-    FORM_DATA[11] = st.selectbox("What is their intake type?",
+    FORM_DATA[11] = st.selectbox("What is their intake subtype?",
     ("Field", "Over the counter", "Comm cat", "Fld_arrest", "phone", "vet_hosp", "fld_stray", "fld_hosptl", "priv_shelt", "born_here",
      "fld_coronr", "fld_cruel", "mun_shelt", "field_return to owner", "fld_evict", "field_os", "fld_aband", "email", "over the counter_os",
      "mom stray", "over the counter_return to owner", "over the counter_owned", "rescue_grp", "fld_invest", "over the counter_arrest", "fld_owned",
      "fld_livstk", "over the counter_coronr", "over the counter_evict", "mom os", "over the counter_emerge", "Unknown"),index=None)
 
     FORM_DATA[12] = st.selectbox(
-    "What is their intake type?",
+    "What is their condition",
     ("Healthy", "Treatable/Rehab", "Untreatable", "Treatable/Manageable","Unknown"),index=None)
 
     FORM_DATA[13] = st.selectbox(
-    "What is their intake type?",
+    "What is your shelter's jurisdiction?",
     ("Santa Rosa", "County", "Windsor", "Out of County", "Rohnert Park", "Healdsburg", "Sonoma", "Petaluma", "Cloverdale", "sebastopol",
      "tribal resv", "Cotati", "Unknown"),index=None)
 
