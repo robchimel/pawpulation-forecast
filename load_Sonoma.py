@@ -176,6 +176,8 @@ def clean_df(df, params, API):
                 df.dropna(subset=[col], inplace=True)
 
     if params['drop_outlier_days'] != False:
+        df.loc[df.Days_in_Shelter=='Unknown', 'Days_in_Shelter'] = -1
+        df.Days_in_Shelter = df.Days_in_Shelter.astype(int)
         df = df[df.Days_in_Shelter < int(params['drop_outlier_days'])]
 
     return df

@@ -4,8 +4,7 @@ import streamlit as st
 from dashboard_utils import MODEL_COLS, TIME_BIN_DICT
 import os
 import sys
-sys.path.insert(1, os.getcwd())
-sys.path.insert(2, os.path.dirname(os.getcwd()))
+import pickle
 from utils import *
 
 FORM_DATA = {}
@@ -58,25 +57,10 @@ with st.form("intake_form"):
 if submitted:
     # Prediction pipeline
     df = pd.DataFrame(FORM_DATA, index=[0])
-    print(df.columns)
-    cols = ['Name',
-        'Type',
-        'Breed',
-        'Color',
-        'Sex',
-        'Size',
-        'Date Of Birth',  
-        'Kennel Number',
-        'Intake Date', 
-        'Intake Type', 
-        'Intake Subtype', 
-        'Intake Condition',
-        'Intake Jurisdiction']
+    cols = ['Name', 'Type', 'Breed', 'Color', 'Sex', 'Size', 'Date Of Birth',  
+        'Kennel Number', 'Intake Date', 'Intake Type', 'Intake Subtype', 
+        'Intake Condition', 'Intake Jurisdiction']
     df.columns = cols
-    # df.rename(columns={'8':'Date_Of_Birth'},inplace=True)
-    # print(df.Date_Of_Birth)
-    # print(type(df.Date_Of_Birth))
-    # print(df.Date_Of_Birth.info())
     # TODO: Run df through data pipeline
     params = {
         'na_data': 'fill',
@@ -89,24 +73,25 @@ if submitted:
             'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
             }
         }
+    print(df.columns)
+    print(df.head())
     results_df = load_df(params, data=df, split_data=False)
-    
+    print(results_df.columns)
+    print(results_df.head())
     # TODO: Load model and generate prediction
-    
-    with open(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl'), 'rb') as file:
+
+    if os.path.isfile(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')):
+        pipeline_path = os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')
+    if os.path.isfile(os.path.join(os.getcwd(), 'XGBpipeline.pkl')):
+        pipeline_path = os.path.join(os.getcwd(), 'XGBpipeline.pkl')
+    with open(pipeline_path, 'rb') as file:
         XGBpipeline = pickle.load(file)
         
         # Predict on the test data
         _, features, _, _, _ = sklearn_pipeline(results_df, results_df)
         results_df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
-        # Days_in_Shelter_Label_and_Prediction captures Days in Shelter prediction
-        # if animal has not been adopted
-        # if animal has been adopted (IE: df.Prediction==False) set this column to the actual days in shelter
-        results_df['Days_in_Shelter_Label_and_Prediction'] = results_df.Days_in_Shelter_Prediction
-        results_df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = results_df.Days_in_Shelter_Label
     
     # TODO: Format output
-    
-    prediction_text = results_df.Days_in_Shelter_Label
-
-    st.markdown(f"The animal is predicted to stay for {prediction_text}.")
+    prediction_text = results_df.Days_in_Shelter_Prediction.iloc[0]
+    predict_los_string = {0:'0 to 3 days', 1:'3 to 14 days', 2:'14 to 30 days', 3:'30 to 100 days', 4:'100+ days'}
+    st.markdown(f"The animal is predicted to stay for {predict_los_string[prediction_text]}.")
