@@ -71,12 +71,30 @@ with st.form("intake_form"):
 if submitted:
     # Prediction pipeline
     df = pd.DataFrame(FORM_DATA, index=[0])
-
+    print(df.columns)
+    cols = ['Name',
+        'Type',
+        'Breed',
+        'Color',
+        'Sex',
+        'Size',
+        'Date Of Birth',  
+        'Kennel Number',
+        'Intake Date', 
+        'Intake Type', 
+        'Intake Subtype', 
+        'Intake Condition',
+        'Intake Jurisdiction']
+    df.columns = cols
+    # df.rename(columns={'8':'Date_Of_Birth'},inplace=True)
+    # print(df.Date_Of_Birth)
+    # print(type(df.Date_Of_Birth))
+    # print(df.Date_Of_Birth.info())
     # TODO: Run df through data pipeline
     params = {
         'na_data': 'fill',
         'drop_outlier_days': False,
-        'embed':True,
+        'embed':False,
         'buckets':[-1,3,14,30,100,99999999],
         'sample_dict':
             {

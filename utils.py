@@ -104,6 +104,13 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True, locatio
         df = embed_colors(df, embeddings_index)
         df = embed_breeds(df, embeddings_index)
         df = embed_subtype(df, embeddings_index)
+    else:
+        df['Color_Embedding_Cluster'] = -1
+        df['Color_Embedding'] = -1
+        df['Subtype_Embedding_Cluster'] = -1
+        df['Intake_Subtype_Embedding'] = -1
+        df['Breed_Embedding_Cluster'] = -1
+        df['Breed_Embedding'] = -1
 
     class_labels = [i for i in range(len(params['buckets'])-1)]
     df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)

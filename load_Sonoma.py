@@ -55,7 +55,8 @@ def load_Sonoma(params, data = 'Animal_Shelter_Intake_and_Outcome_20240517.csv',
     # Convert 'Date Of Birth' to datetime after reading the CSV df['Date Of Birth'] = pd.to_datetime(df['Date Of Birth'], errors='coerce')
     df['Date Of Birth'] = pd.to_datetime(df['Date Of Birth'], errors='coerce')
     df['Intake Date'] = pd.to_datetime(df['Intake Date'], errors='coerce')
-    df['Outcome Date'] = pd.to_datetime(df['Outcome Date'], errors='coerce')
+    if 'Outcome Date' in df.columns:
+        df['Outcome Date'] = ''
     df = clean_df(df, params, API)
     df = feature_eng(df)
 
@@ -65,7 +66,10 @@ def feature_eng(df):
     '''this is where we add more columns'''
 
     # identify return animals, add new col for this
-    df['Multiple_Visit_Count'] = df.groupby('Animal_ID')['Animal_ID'].transform('count')
+    if 'Animal_ID' in df.columns:
+        df['Multiple_Visit_Count'] = df.groupby('Animal_ID')['Animal_ID'].transform('count')
+    else:
+        df['Multiple_Visit_Count'] = -1
 
     # calculate age at time of adoption
 
@@ -136,12 +140,18 @@ def clean_df(df, params, API):
     if API==False:
         df = df[~df.Outcome_Date.isnull()]
     else:
-        df.loc[df.Outcome_Date.isnull(), 'Days_in_Shelter'] = -1
+        if 'Outcome Date' in df.columns:
+            df.loc[df.Outcome_Date.isnull(), 'Days_in_Shelter'] = -1
+        else:
+            df['Days_in_Shelter'] = -1
+            df['Outcome_Date'] = 'Unknown'
+
     df = df[~df.Intake_Date.isnull()]
     # Remove duplicates
     df.drop_duplicates(inplace=True)
     # Drop rows where 'Animal ID' is missing as it is a critical identifier
-    df.dropna(subset=['Animal_ID'], inplace=True)
+    if 'Animal_ID' in df.columns:
+        df.dropna(subset=['Animal_ID'], inplace=True)
     if 'intake_total' in df.columns:
         df.drop(columns=['intake_total'], inplace=True)
     if 'Count' in df.columns:
