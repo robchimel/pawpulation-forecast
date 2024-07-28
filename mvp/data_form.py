@@ -19,7 +19,7 @@ Please input the requested intake data below. When finished, click the
 with st.form("intake_form"):
     FORM_DATA[1] = st.text_input("What is their name?", None)
 
-    FORM_DATA[2] = st.selectbox("What is their type?",("Dog", "Cat"))
+    FORM_DATA[2] = st.selectbox("What is their type?",("Dog", "Cat"),None)
 
     FORM_DATA[3] = st.text_input("What is their breed?", None)
 
