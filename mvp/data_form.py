@@ -72,13 +72,23 @@ if submitted:
             }
         }
     results_df = load_df(params, data=df, split_data=False)
+    
     # TODO: Load model and generate prediction
-
+    
+    with open(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl'), 'rb') as file:
+        XGBpipeline = pickle.load(file)
+        
+        # Predict on the test data
+        _, features, _, _, _ = sklearn_pipeline(results_df, results_df)
+        results_df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
+        # Days_in_Shelter_Label_and_Prediction captures Days in Shelter prediction
+        # if animal has not been adopted
+        # if animal has been adopted (IE: df.Prediction==False) set this column to the actual days in shelter
+        results_df['Days_in_Shelter_Label_and_Prediction'] = results_df.Days_in_Shelter_Prediction
+        results_df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = results_df.Days_in_Shelter_Label
+    
     # TODO: Format output
-
-    # vvvv Test code vvvv
-    prediction = np.random.randint(0, 5)
-    prediction_text = TIME_BIN_DICT[prediction]
+    
+    prediction_text = results_df.Days_in_Shelter_Label
 
     st.markdown(f"The animal is predicted to stay for {prediction_text}.")
-    # ^^^^ Test code ^^^^
