@@ -152,6 +152,7 @@ def clean_df(df, params, API):
     # Drop rows where 'Animal ID' is missing as it is a critical identifier
     if 'Animal_ID' in df.columns:
         df.dropna(subset=['Animal_ID'], inplace=True)
+        df.drop_duplicates(subset=['Animal_ID'], inplace=True)
     if 'intake_total' in df.columns:
         df.drop(columns=['intake_total'], inplace=True)
     if 'Count' in df.columns:
