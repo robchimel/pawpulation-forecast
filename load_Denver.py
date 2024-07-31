@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 def load_denver(params, data = 'DAS_Data.csv'):
     '''
@@ -27,6 +28,9 @@ def load_denver(params, data = 'DAS_Data.csv'):
     if isinstance(data, pd.DataFrame):
         df = data
     else:
+
+        if os.path.isfile(data)==False:
+            data = os.path.join(os.getcwd(), 'Data', data)
         df =  pd.read_csv(data, dtype=dtype_dict)
 
     rename_dict = {'animal_name':'Name', 'animal_type':'Type', 'primary_breed':'Breed', 'primary_color':'Color', 'sex':'Sex',

@@ -1,5 +1,9 @@
 import pandas as pd
 import numpy as np
+import os
+import sys
+sys.path.insert(1, os.path.join(os.path.dirname(os.getcwd()), 'Data'))
+sys.path.insert(2, os.path.join((os.getcwd()), 'Data'))
 
 def load_Austin(params, 
                 intake_name = 'Austin_Animal_Center_Intakes_20240609.csv',
@@ -8,7 +12,12 @@ def load_Austin(params,
     prepare austin data to be merged with other datasets. clean and do feature engineering
     '''
 
+    if os.path.isfile(intake_name)==False:
+        intake_name = os.path.join(os.getcwd(), 'Data', intake_name)
     intake_df =  prep_intake(pd.read_csv(intake_name))
+
+    if os.path.isfile(outcome_name)==False:
+        outcome_name = os.path.join(os.getcwd(), 'Data', outcome_name)
     outcome_df =  prep_outcome(pd.read_csv(outcome_name))
     df = pd.merge(intake_df, outcome_df, how="left", on=['Name','Type', 'Breed','Color','Animal ID'])
     df = clean_df(df, params)

@@ -3,13 +3,11 @@ import pandas as pd
 import streamlit as st
 from dashboard_utils import MODEL_COLS, TIME_BIN_DICT
 import os
-import sys
-sys.path.insert(1, os.getcwd())
-sys.path.insert(2, os.path.dirname(os.getcwd()))
+import pickle
 from utils import *
 
 FORM_DATA = {}
-
+prediction_text = ''
 st.markdown("""
 # Intake Data Entry
 Please input the requested intake data below. When finished, click the
@@ -56,28 +54,35 @@ with st.form("intake_form"):
      "tribal resv", "Cotati", "Unknown"),index=None)
 
     submitted = st.form_submit_button("Generate Prediction")
-
+st.form_submit_button()
 if submitted:
     # Run data through data pipeline
     df = pd.DataFrame(FORM_DATA, index=[0])
 
-    if len(df) == 0:
+    if df.shape[0] == 0:
         st.error("No data available for this animal. Please try again.")
     else:
         # Load model and generate prediction
-        with open(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl'), 'rb') as file:
+        params = {
+        'na_data': 'fill',
+        'drop_outlier_days': False,
+        'embed':False,
+        'buckets':[-1,3,14,30,100,99999999],
+        'sample_dict':
+            {
+            'stratify_col':'Type',
+            'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
+            }
+        }
+        df = load_df(params, data=df, split_data=False)
+        if os.path.isfile(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')):
+            pipeline_path = os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')
+        if os.path.isfile(os.path.join(os.getcwd(), 'XGBpipeline.pkl')):
+            pipeline_path = os.path.join(os.getcwd(), 'XGBpipeline.pkl')
+        with open(pipeline_path, 'rb') as file:
             XGBpipeline = pickle.load(file)
         # Predict on the test data
         _, features, _, _, _ = sklearn_pipeline(df, df)
-        df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
-        # Days_in_Shelter_Label_and_Prediction captures Days in Shelter prediction
-        # if animal has not been adopted
-        # if animal has been adopted (IE: df.Prediction==False) set this column to the actual days in shelter
-        df['Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Prediction
-        df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Label
-    
-    # TODO: Format output
-    
-    prediction_text = df.Days_in_Shelter_Label
-
-    st.markdown(f"The animal is predicted to stay for {prediction_text}.")
+        prediction_text = XGBpipeline.predict(features)
+        
+st.markdown(f"The animal is predicted to stay for {prediction_text}.")

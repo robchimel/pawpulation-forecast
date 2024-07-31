@@ -1,6 +1,7 @@
 import streamlit as st
-
-st.image('./banner-image.jpg')
+import os
+print(f'home is here, {os.getcwd()}')
+st.image('banner-image.jpg')
 
 st.title('Pawpulation Forecast :dog2::black_cat:')
 
@@ -66,7 +67,7 @@ st.markdown(""" Denver Animal Shelter Customized (XGBoost: 0.61 accuracy, 0.39 f
 st.image('./denver-results-customized.jpg')
 
 st.header('Who We Are')
-st.image('./team-image.jpg')
+st.image('team-image.jpg')
 
 st.header('Acknowledgements')
 st.markdown(""" We are grateful for the guidance and encouragement of our Capstone Advisors, Dr. Korin Reid and Dr. Puya H. Vahabi, of the Masters in Data Science program at School of Information, University of California, Berkeley.

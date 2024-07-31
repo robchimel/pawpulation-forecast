@@ -5,20 +5,21 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
-from multiprocessing import Pool
-import functools
 from load_Denver import *
 from load_Sonoma import *
 from load_Austin import *
 import os
 import sys
-from datetime import datetime
 sys.path.insert(1, os.getcwd())
 sys.path.insert(2, os.path.dirname(os.getcwd()))
 
 
-def load_df(params, data = False, no_outcome_cols=True, split_data=True):
+def load_df(params, data = False, no_outcome_cols=True, split_data=True, location='all'):
     '''
+        data = False if you are not passing a dataframe into load_df and want to use our default data
+        no_outcome_cols=True drops excess columns not needed for model training
+        split_data = True splits data into Train, Test, Validation
+        location controls what locations we pull from. This is only used for data=True (can be all, Sonoma, Austin, Denver)
         params options
 
         na_data will fill missing data with 'unknown', delete missing data or do nothing
@@ -54,8 +55,18 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True):
         df['Days_in_Shelter'] = df['Days_in_Shelter'].astype('int64')
         # API_data = True
     else:
-        df = load_all_data(params) # use multiprocess to speed up data load
-        # API_data = False
+        if location.title() == 'All':
+            df = load_all_data(params) # use multiprocess to speed up data load
+            # API_data = False
+        elif location.title() == 'Sonoma':
+            df = load_Sonoma(params)
+            df['dataset'] = 'Sonoma'
+        elif location.title() == 'Denver':
+            df = load_denver(params)
+            df['dataset'] = 'Denver'
+        elif location.title() == 'Austin':
+            df = load_Austin(params)
+            df['dataset'] = 'Austin'
 
     df['Intake_Year'] = df['Intake_Date'].dt.year
     df['Intake_Month'] = df['Intake_Date'].dt.month
@@ -93,6 +104,13 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True):
         df = embed_colors(df, embeddings_index)
         df = embed_breeds(df, embeddings_index)
         df = embed_subtype(df, embeddings_index)
+    else:
+        df['Color_Embedding_Cluster'] = -1
+        df['Color_Embedding'] = -1
+        df['Subtype_Embedding_Cluster'] = -1
+        df['Intake_Subtype_Embedding'] = -1
+        df['Breed_Embedding_Cluster'] = -1
+        df['Breed_Embedding'] = -1
 
     class_labels = [i for i in range(len(params['buckets'])-1)]
     df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)
@@ -129,18 +147,15 @@ def smap(f):
     return f()
     
 def load_all_data(params):
-    func1 = functools.partial(load_Sonoma, params)
-    func2 = functools.partial(load_denver, params)
-    func3 = functools.partial(load_Austin, params)
-    pool = Pool(processes=3)
-    results = pool.map(smap, [func1, func2, func3])
-    pool.close()
-    pool.join()
-    results[0]['dataset'] = 'Sonoma'
-    results[1]['dataset'] = 'Denver'
-    results[2]['dataset'] = 'Austin'
+    
+    dfSonoma = load_Sonoma(params)
+    dfSonoma['dataset'] = 'Sonoma'    
+    dfDenver = load_denver(params)
+    dfDenver['dataset'] = 'Denver'
+    dfAustin = load_Austin(params)
+    dfAustin['dataset'] = 'Austin'
 
-    df = pd.concat([results[0],results[1],results[2]], ignore_index=True)
+    df = pd.concat([dfSonoma,dfDenver,dfAustin], ignore_index=True)
     return df
 
 def train_validate_test_split(df, params):
@@ -315,5 +330,5 @@ if __name__ == '__main__':
                 'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
                 }
             }
-    train_df, validate_df, test_df = load_df(params)
+    train_df, validate_df, test_df = load_df(params, location='Sonoma')
     
