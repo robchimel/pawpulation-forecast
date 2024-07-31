@@ -61,7 +61,7 @@ if submitted:
         'Kennel Number', 'Intake Date', 'Intake Type', 'Intake Subtype', 
         'Intake Condition', 'Intake Jurisdiction']
     df.columns = cols
-    # TODO: Run df through data pipeline
+    # Run df through data pipeline
     params = {
         'na_data': 'fill',
         'drop_outlier_days': False,
@@ -73,12 +73,8 @@ if submitted:
             'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
             }
         }
-    # print(df.columns)
-    # print(df.head())
     results_df = load_df(params, data=df, split_data=False)
-    # print(results_df.columns)
-    # print(results_df.head())
-    # TODO: Load model and generate prediction
+    # Load model and generate prediction
     try:
         if os.path.isfile(os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')):
             pipeline_path = os.path.join(os.path.dirname(os.getcwd()),'XGBpipeline.pkl')
@@ -87,13 +83,12 @@ if submitted:
         with open(pipeline_path, 'rb') as file:
             XGBpipeline = pickle.load(file)
             
-            # Predict on the test data
-            _, features, _, _, _ = sklearn_pipeline(results_df, results_df)
-            results_df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
-        
-        # TODO: Format output
+        # Predict on the test data
+        _, features, _, _, _ = sklearn_pipeline(results_df, results_df)
+
+        results_df['Days_in_Shelter_Prediction'] = XGBpipeline.predict(features)
         prediction_text = results_df.Days_in_Shelter_Prediction.iloc[0]
         predict_los_string = {0:'0 to 3 days', 1:'3 to 14 days', 2:'14 to 30 days', 3:'30 to 100 days', 4:'100+ days'}
         st.markdown(f"The animal is predicted to stay for {predict_los_string[prediction_text]}.")
-    except:
-        st.markdown(f"Error with user input, prediction not returned.")
+    except Exception as e:
+        st.markdown(f"Error with user input, prediction not returned.\n {e}")
