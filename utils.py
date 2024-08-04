@@ -114,6 +114,7 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True, locatio
 
     class_labels = [i for i in range(len(params['buckets'])-1)]
     df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)
+    df.loc[df.Days_in_Shelter_Label.isna(),'Days_in_Shelter_Label'] = 0
     # df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
     df['Prediction'] = True
     df.loc[df.Outcome_Date != 'Unknown', 'Prediction'] = False
