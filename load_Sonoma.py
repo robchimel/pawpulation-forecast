@@ -56,7 +56,7 @@ def load_Sonoma(params, data = 'Animal_Shelter_Intake_and_Outcome_20240517.csv',
     df['Date Of Birth'] = pd.to_datetime(df['Date Of Birth'], errors='coerce')
     df['Intake Date'] = pd.to_datetime(df['Intake Date'], errors='coerce')
     if 'Outcome Date' in df.columns:
-        df['Outcome Date'] = ''
+        pd.to_datetime(df['Outcome Date'], errors='coerce')
     df = clean_df(df, params, API)
     df = feature_eng(df)
 
@@ -140,8 +140,9 @@ def clean_df(df, params, API):
     if API==False:
         df = df[~df.Outcome_Date.isnull()]
     else:
-        if 'Outcome Date' in df.columns:
+        if 'Outcome_Date' in df.columns:
             df.loc[df.Outcome_Date.isnull(), 'Days_in_Shelter'] = -1
+            df.loc[df.Outcome_Date.isnull(), 'Outcome_Date'] = 'Unknown'
         else:
             df['Days_in_Shelter'] = -1
             df['Outcome_Date'] = 'Unknown'
