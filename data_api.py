@@ -61,7 +61,7 @@ if submitted:
         # if animal has not been adopted
         # if animal has been adopted (IE: df.Prediction==False) set this column to the actual days in shelter
         df['Days_in_Shelter_Label_and_Prediction'] = df.Days_in_Shelter_Prediction
-        # df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = df[df.Prediction==False].Days_in_Shelter_Label
+        df.loc[df.Prediction==False, 'Days_in_Shelter_Label_and_Prediction'] = df[df.Prediction==False].Days_in_Shelter
 
         # Export option
         time_stamp = datetime.today().strftime("%Y%m%d")

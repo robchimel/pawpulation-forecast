@@ -97,13 +97,13 @@ def plot_calendar_view(plot_df, sort_field, order):
     # Brush code obtained from https://stackoverflow.com/a/78118916
     brush = alt.selection_interval(encodings=['x'], bind='scales')
 
-    #chart = alt.Chart(plot_df).mark_bar(orient="horizontal").encode(
-    chart = alt.Chart(plot_df[plot_df.Prediction.eq(True)]).mark_bar(orient="horizontal").encode(
+    chart = alt.Chart(plot_df).mark_bar(orient="horizontal").encode(
+    #chart = alt.Chart(plot_df[plot_df.Prediction.eq(True)]).mark_bar(orient="horizontal").encode(
         x=alt.X("Intake_Date", title="Intake Date"),
         x2=alt.X2("Outtake_Date", title="Outcome Date"),
         y=alt.Y("Animal_ID",  title="Animal ID", sort=alt.EncodingSortField(field=sort_field, op="max", order=order)),
-        #color=alt.Color("Calendar_Legend_Label", title="Type"),
-        color=alt.Color("LOS_Text", title="Duration", scale=alt.Scale(domain=list(TIME_BIN_DICT.values()))),
+        color=alt.Color("Calendar_Legend_Label", title="Type"),
+        #color=alt.Color("LOS_Text", title="Duration", scale=alt.Scale(domain=list(TIME_BIN_DICT.values()))),
     ).add_params(brush).properties(title="Length-of-Stay Overview", width=500)
 
     return chart
