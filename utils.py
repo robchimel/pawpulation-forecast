@@ -2,24 +2,26 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
+from sklearn.pipeline import Pipeline, TransformerMixin
+from sklearn.base import BaseEstimator
+from multiprocessing import Pool
+import pickle
+import functools
 from load_Denver import *
 from load_Sonoma import *
 from load_Austin import *
 import os
 import sys
+from datetime import datetime
 sys.path.insert(1, os.getcwd())
 sys.path.insert(2, os.path.dirname(os.getcwd()))
 
 
-def load_df(params, data = False, no_outcome_cols=True, split_data=True, location='all'):
+def load_df(params, data = False, no_outcome_cols=True, split_data=True):
     '''
-        data = False if you are not passing a dataframe into load_df and want to use our default data
-        no_outcome_cols=True drops excess columns not needed for model training
-        split_data = True splits data into Train, Test, Validation
-        location controls what locations we pull from. This is only used for data=True (can be all, Sonoma, Austin, Denver)
         params options
 
         na_data will fill missing data with 'unknown', delete missing data or do nothing
@@ -55,18 +57,8 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True, locatio
         df['Days_in_Shelter'] = df['Days_in_Shelter'].astype('int64')
         # API_data = True
     else:
-        if location.title() == 'All':
-            df = load_all_data(params) # use multiprocess to speed up data load
-            # API_data = False
-        elif location.title() == 'Sonoma':
-            df = load_Sonoma(params)
-            df['dataset'] = 'Sonoma'
-        elif location.title() == 'Denver':
-            df = load_denver(params)
-            df['dataset'] = 'Denver'
-        elif location.title() == 'Austin':
-            df = load_Austin(params)
-            df['dataset'] = 'Austin'
+        df = load_all_data(params) # use multiprocess to speed up data load
+        # API_data = False
 
     df['Intake_Year'] = df['Intake_Date'].dt.year
     df['Intake_Month'] = df['Intake_Date'].dt.month
@@ -104,17 +96,9 @@ def load_df(params, data = False, no_outcome_cols=True, split_data=True, locatio
         df = embed_colors(df, embeddings_index)
         df = embed_breeds(df, embeddings_index)
         df = embed_subtype(df, embeddings_index)
-    else:
-        df['Color_Embedding_Cluster'] = -1
-        df['Color_Embedding'] = -1
-        df['Subtype_Embedding_Cluster'] = -1
-        df['Intake_Subtype_Embedding'] = -1
-        df['Breed_Embedding_Cluster'] = -1
-        df['Breed_Embedding'] = -1
 
     class_labels = [i for i in range(len(params['buckets'])-1)]
     df['Days_in_Shelter_Label'] = pd.cut(df['Days_in_Shelter'], bins=params['buckets'], labels=class_labels)
-    df.loc[df.Days_in_Shelter_Label.isna(),'Days_in_Shelter_Label'] = 0
     # df['Days_in_Shelter_Label'], bin_edges = pd.qcut(df['Days_in_Shelter'], q=num_buckets, labels=class_labels, retbins=True)
     df['Prediction'] = True
     df.loc[df.Outcome_Date != 'Unknown', 'Prediction'] = False
@@ -148,15 +132,18 @@ def smap(f):
     return f()
     
 def load_all_data(params):
-    
-    dfSonoma = load_Sonoma(params)
-    dfSonoma['dataset'] = 'Sonoma'    
-    dfDenver = load_denver(params)
-    dfDenver['dataset'] = 'Denver'
-    dfAustin = load_Austin(params)
-    dfAustin['dataset'] = 'Austin'
+    func1 = functools.partial(load_Sonoma, params)
+    func2 = functools.partial(load_denver, params)
+    func3 = functools.partial(load_Austin, params)
+    pool = Pool(processes=3)
+    results = pool.map(smap, [func1, func2, func3])
+    pool.close()
+    pool.join()
+    results[0]['dataset'] = 'Sonoma'
+    results[1]['dataset'] = 'Denver'
+    results[2]['dataset'] = 'Austin'
 
-    df = pd.concat([dfSonoma,dfDenver,dfAustin], ignore_index=True)
+    df = pd.concat([results[0],results[1],results[2]], ignore_index=True)
     return df
 
 def train_validate_test_split(df, params):
@@ -309,14 +296,47 @@ def sklearn_pipeline(train_df,validate_df):
     X_test = validate_df[feature_cols]
     y_test = validate_df[target_col]
 
-    # Define the column transformer with OneHotEncoder for categorical columns and StandardScaler for numerical columns
+    # Initialize label encoder transformer
+    label_encoder_transformer = LabelEncoderTransformer(cat_cols=cat_cols)
+
+    # Define the column transformer with LabelEncoder for categorical columns and StandardScaler for numerical columns
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), num_cols),
-            ('cat', OneHotEncoder(), cat_cols)
+            ('cat', label_encoder_transformer, cat_cols)
         ])
 
-    return preprocessor, X_train, y_train, X_test, y_test
+    return preprocessor, X_train, y_train, X_test, y_test, label_encoder_transformer
+
+
+class LabelEncoderTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, cat_cols):
+        self.cat_cols = cat_cols
+        self.label_encoders = {col: LabelEncoder() for col in cat_cols}
+
+    def fit(self, X, y=None):
+        for col in self.cat_cols:
+            if col in X.columns:
+                self.label_encoders[col].fit(X[col])
+        return self
+
+    def transform(self, X):
+        X_copy = X.copy()
+        for col in self.cat_cols:
+            if col in X_copy.columns:
+                X_copy[col] = self.label_encoders[col].transform(X_copy[col])
+        return X_copy
+
+    def fit_transform(self, X, y=None):
+        return self.fit(X).transform(X)
+
+    def save_encoders(self, file_path='label_encoders.pkl'):
+        with open(file_path, 'wb') as f:
+            pickle.dump(self.label_encoders, f)
+
+    def load_encoders(self, file_path='label_encoders.pkl'):
+        with open(file_path, 'rb') as f:
+            self.label_encoders = pickle.load(f)
 
 
 if __name__ == '__main__':
@@ -331,5 +351,5 @@ if __name__ == '__main__':
                 'train_size':0.6, 'validate_size':0.2, 'test_size':0.2
                 }
             }
-    train_df, validate_df, test_df = load_df(params, location='Sonoma')
+    train_df, validate_df, test_df = load_df(params)
     
