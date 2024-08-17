@@ -81,4 +81,6 @@ In addition, the following subject matter experts contributed heavily during the
 - Melanie Sobel, Director of Denver Animal Protection
 - Sarah Siskin, Adoption Manager, Humane Society of Memphis
 - Joscelyne Thompson, Intake Manager, Humane Society of Memphis
+
+Finally, we acknowledge ChatGPT's help in crafting our project name.
 """)
